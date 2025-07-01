@@ -1,0 +1,7 @@
+#ifndef VERSION_H
+#define VERSION_H
+
+#define TRAVEL_PLANNER_VERSION "1.0.0"
+#define TRAVEL_PLANNER_BUILD_DATE "01-07-2025"
+
+#endif // VERSION_H

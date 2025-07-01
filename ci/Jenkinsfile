@@ -1,0 +1,61 @@
+pipeline {
+    agent {
+        docker {
+            image 'gcc:11'
+            args '-v /tmp:/tmp'
+        }
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                sh 'mkdir -p build'
+            }
+        }
+
+        stage('Configure') {
+            steps {
+                sh '''
+                cd build
+                cmake ..
+                '''
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh '''
+                cd build
+                make
+                '''
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh '''
+                cd build
+                ctest --output-on-failure || true
+                '''
+            }
+            post {
+                always {
+                    junit 'build/test-results/*.xml'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Build successful!'
+        }
+        failure {
+            echo 'Build failed!'
+        }
+        always {
+            cleanWs()
+        }
+    }
+}

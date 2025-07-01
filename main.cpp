@@ -24,7 +24,7 @@ void displayHelp() {
     std::cout << "Usage: travel_planner [OPTIONS]\n"
         << "Options:\n"
         << "  -h, --help     Display this help message\n"
-
+        << "  --version      Display version information\n"
         << "  --create       Create a new itinerary\n"
         << "  --list         List all itineraries\n"
         << "  --view ID      View itinerary with specified ID\n"
@@ -41,23 +41,7 @@ bool hasOption(const std::vector<std::string>& args, const std::string& option) 
     return std::find(args.begin(), args.end(), option) != args.end();
 }
 
-bool isKnownOption(const std::string& option) {
-    const std::vector< std::string > knownOptions = {
-                "-h", "--help",  "--create", "--list",
-                "--view", "--edit", "--delete"
-    };
-    return std::find(knownOptions.begin(), knownOptions.end(), option) != knownOptions.end();
-}
 
-std::string findUnknownOption(const std::vector< std::string >& args) {
-    for (const auto& arg : args) {
-        // Check if the argument starts with - or -- and is not a known option
-        if ((arg.size() > 1 && arg[0] == '-') && !isKnownOption(arg)) {
-            return arg;
-        }
-    }
-    return "";
-}
 
 int main(int argc, char* argv[]) {
     std::vector<std::string> args(argv + 1, argv + argc);

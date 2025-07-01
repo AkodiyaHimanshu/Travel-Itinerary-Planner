@@ -1,0 +1,35 @@
+# Stage 1: Build the application
+FROM gcc:11 AS builder
+
+WORKDIR /app
+
+# Install CMake
+RUN apt-get update && apt-get install -y \
+    cmake \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy only the files needed for building
+COPY CMakeLists.txt .
+COPY src/ ./src/
+COPY include/ ./include/
+COPY tests/ ./tests/
+
+# Create build directory and build the application
+RUN mkdir build \
+    && cd build \
+    && cmake .. \
+    && make
+
+# Stage 2: Create the runtime image
+FROM debian:bullseye-slim
+
+WORKDIR /app
+
+# Copy the built executable from the previous stage
+COPY --from=builder /app/build/travel_planner .
+
+# Set the entrypoint
+ENTRYPOINT ["./travel_planner"]
+
+# Default command if no arguments provided
+CMD ["--help"]

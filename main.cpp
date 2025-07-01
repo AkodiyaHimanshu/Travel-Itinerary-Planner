@@ -41,7 +41,23 @@ bool hasOption(const std::vector<std::string>& args, const std::string& option) 
     return std::find(args.begin(), args.end(), option) != args.end();
 }
 
+bool isKnownOption(const std::string& option) {
+    const std::vector< std::string > knownOptions = {
+                "-h", "--help", "--version", "--create", "--list",
+                "--view", "--edit", "--delete"
+    };
+    return std::find(knownOptions.begin(), knownOptions.end(), option) != knownOptions.end();
+}
 
+std::string findUnknownOption(const std::vector< std::string >& args) {
+    for (const auto& arg : args) {
+        // Check if the argument starts with - or -- and is not a known option
+        if ((arg.size() > 1 && arg[0] == '-') && !isKnownOption(arg)) {
+            return arg;
+        }
+    }
+    return "";
+}
 
 int main(int argc, char* argv[]) {
     std::vector<std::string> args(argv + 1, argv + argc);

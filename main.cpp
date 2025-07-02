@@ -9,86 +9,180 @@ using namespace std;
 #include <string>
 #include <vector>
 #include <algorithm>
-#include "include/version.h" // Include the version header
+#include <random>
+#include "include/version.h"
+#include "include/Itinerary.h"
+#include "src/StorageManager.h"
 
+// Function declarations
+void displayBanner();
+void displayHelp();
+void displayVersion();
+bool hasOption(int argc, char* argv[], const std::string& option);
+bool isKnownOption(const std::string& option);
+std::string findUnknownOption(int argc, char* argv[]);
+std::string generateUUID();
+void addItinerary();
+std::string promptInput(const std::string& prompt, bool allowEmpty = false);
+
+int main(int argc, char* argv[]) {
+    displayBanner();
+    addItinerary();
+
+    // Check for unknown options
+    std::string unknownOption = findUnknownOption(argc, argv);
+    if (!unknownOption.empty()) {
+        std::cerr << "Error: Unknown option '" << unknownOption << "'" << std::endl;
+        displayHelp();
+        return 1;
+    }
+
+    // Help option
+    if (argc == 1 || hasOption(argc, argv, "--help") || hasOption(argc, argv, "-h")) {
+        displayHelp();
+        return 0;
+    }
+
+    // Version option
+    if (hasOption(argc, argv, "--version")) {
+        displayVersion();
+        return 0;
+    }
+
+    // Add itinerary option
+    if (hasOption(argc, argv, "add")) {
+        addItinerary();
+        return 0;
+    }
+
+    // If no valid command is provided
+    std::cerr << "Error: Invalid command" << std::endl;
+    displayHelp();
+    return 1;
+}
+
+// Display the application banner
 void displayBanner() {
-    const std::string banner = "Travel Itinerary Planner CLI";
-    const std::string separator(banner.length(), '=');
-
-    std::cout << separator << std::endl
-        << banner << std::endl
-        << separator << std::endl;
+    std::string title = "Travel Itinerary Planner CLI";
+    std::string separator(title.length(), '=');
+    std::cout << separator << std::endl;
+    std::cout << title << std::endl;
+    std::cout << separator << std::endl << std::endl;
 }
 
+// Display help information
 void displayHelp() {
-    std::cout << "Usage: travel_planner [OPTIONS]\n"
-        << "Options:\n"
-        << "  -h, --help     Display this help message\n"
-        << "  --version      Display version information\n"
-        << "  --create       Create a new itinerary\n"
-        << "  --list         List all itineraries\n"
-        << "  --view ID      View itinerary with specified ID\n"
-        << "  --edit ID      Edit itinerary with specified ID\n"
-        << "  --delete ID    Delete itinerary with specified ID\n";
+    std::cout << "Usage: travel_planner [OPTION]..." << std::endl;
+    std::cout << "Options:" << std::endl;
+    std::cout << "  --help, -h    Display this help message" << std::endl;
+    std::cout << "  --version     Display version information" << std::endl;
+    std::cout << "Commands:" << std::endl;
+    std::cout << "  add           Add a new itinerary" << std::endl;
+    std::cout << "  list          List all itineraries" << std::endl;
+    std::cout << "  view ID       View details of a specific itinerary" << std::endl;
+    std::cout << "  edit ID       Edit an existing itinerary" << std::endl;
+    std::cout << "  delete ID     Delete an itinerary" << std::endl;
 }
 
+// Display version information
 void displayVersion() {
-    std::cout << "Travel Itinerary Planner v" << TRAVEL_PLANNER_VERSION << std::endl
-        << "Build date: " << TRAVEL_PLANNER_BUILD_DATE << std::endl;
+    std::cout << "Travel Itinerary Planner v" << TRAVEL_PLANNER_VERSION << std::endl;
+    std::cout << "Build date: " << __DATE__ << std::endl;
 }
 
-bool hasOption(const std::vector<std::string>& args, const std::string& option) {
-    return std::find(args.begin(), args.end(), option) != args.end();
+// Check if a specific option is present in the arguments
+bool hasOption(int argc, char* argv[], const std::string& option) {
+    return std::find_if(argv + 1, argv + argc, [&option](const char* arg) {
+        return option == arg;
+        }) != (argv + argc);
 }
 
+// Check if an option is recognized by the program
 bool isKnownOption(const std::string& option) {
-    const std::vector< std::string > knownOptions = {
-                "-h", "--help", "--version", "--create", "--list",
-                "--view", "--edit", "--delete"
+    static const std::vector<std::string> knownOptions = {
+        "--help", "-h", "--version", "add", "list", "view", "edit", "delete"
     };
+
     return std::find(knownOptions.begin(), knownOptions.end(), option) != knownOptions.end();
 }
 
-std::string findUnknownOption(const std::vector< std::string >& args) {
-    for (const auto& arg : args) {
-        // Check if the argument starts with - or -- and is not a known option
-        if ((arg.size() > 1 && arg[0] == '-') && !isKnownOption(arg)) {
+// Find any unknown option in the arguments
+std::string findUnknownOption(int argc, char* argv[]) {
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg.rfind("--", 0) == 0 && !isKnownOption(arg)) {
             return arg;
         }
     }
     return "";
 }
 
-int main(int argc, char* argv[]) {
-    std::vector<std::string> args(argv + 1, argv + argc);
+// Generate a simple UUID for itinerary IDs
+std::string generateUUID() {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_int_distribution<> dis(0, 15);
+    static const char* hex_chars = "0123456789abcdef";
 
-    if (args.empty()) {
-        displayBanner();
-        displayHelp();
-        return 0;
+    std::string uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx";
+
+    for (char& c : uuid) {
+        if (c == 'x') {
+            c = hex_chars[dis(gen)];
+        }
+        else if (c == 'y') {
+            c = hex_chars[(dis(gen) & 0x3) | 0x8];
+        }
     }
 
-    // Check for unknown options
-    std::string unknownOption = findUnknownOption(args);
-    if (!unknownOption.empty()) {
-            std::cerr << "Error: Unknown option: " << unknownOption << std::endl;
-            displayHelp();
-            return 1;
+    return uuid;
+}
+
+// Prompt user for input with validation
+std::string promptInput(const std::string& prompt, bool allowEmpty) {
+    std::string input;
+    bool valid = false;
+
+    while (!valid) {
+        std::cout << prompt;
+        std::getline(std::cin, input);
+
+        if (input.empty() && !allowEmpty) {
+            std::cout << "Input cannot be empty. Please try again." << std::endl;
+        }
+        else {
+            valid = true;
+        }
     }
 
-    if (hasOption(args, "--help") || hasOption(args, "-h")) {
-        displayBanner();
-        displayHelp();
-        return 0;
-    }
+    return input;
+}
 
-    if (hasOption(args, "--version")) {
-        displayVersion();
-        return 0;
-    }
+// Add a new itinerary with user prompts
+void addItinerary() {
+    std::cout << "=== Add New Itinerary ===" << std::endl;
 
-    displayBanner();
-    // Main application logic will go here
+    // Generate a unique ID
+    std::string id = generateUUID();
 
-    return 0;
+    // Collect itinerary details from user
+    std::string name = promptInput("Enter itinerary name: ");
+    std::string start_date = promptInput("Enter start date (YYYY-MM-DD): ");
+    std::string end_date = promptInput("Enter end date (YYYY-MM-DD): ");
+    std::string description = promptInput("Enter description (press Enter when done): ", true);
+
+    // Create the itinerary object
+    travel_planner::Itinerary newItinerary(id, name, start_date, end_date, description);
+
+    // Load existing itineraries
+    travel_planner::StorageManager storageManager("");  // Using default path
+    std::vector<travel_planner::Itinerary> itineraries = storageManager.loadAll();
+
+    // Add the new itinerary
+    itineraries.push_back(newItinerary);
+
+    // Save all itineraries
+    storageManager.saveAll(itineraries);
+
+    std::cout << "Itinerary added successfully with ID: " << id << std::endl;
 }

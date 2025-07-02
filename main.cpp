@@ -4,7 +4,6 @@
 #include "main.h"
 
 using namespace std;
-
 #include <iostream>
 #include <string>
 #include <vector>
@@ -26,6 +25,7 @@ std::string generateUUID();
 void addItinerary();
 void listItineraries();
 void viewItinerary(const std::string& id);
+bool deleteItinerary(const std::string& id);
 std::string promptInput(const std::string& prompt, bool allowEmpty = false);
 
 int main(int argc, char* argv[]) {
@@ -71,6 +71,31 @@ int main(int argc, char* argv[]) {
 
         std::string id = argv[2];
         viewItinerary(id);
+        return 0;
+    }
+
+    if (hasOption(argc, argv, "delete")) {
+        if (argc < 3) {
+            std::cerr << "Error: 'delete' command requires an itinerary ID\n";
+            std::cerr << "Usage: " << argv[0] << " delete <itinerary_id>\n";
+            return 1;
+        }
+
+        std::string id = argv[2];
+
+        // Confirm deletion with the user
+        char confirm;
+        std::cout << "Are you sure you want to delete the itinerary with ID '" << id << "'? (y/n): ";
+        std::cin >> confirm;
+
+        if (tolower(confirm) != 'y') {
+            std::cout << "Deletion cancelled.\n";
+            return 0;
+        }
+
+        if (!deleteItinerary(id)) {
+            return 1; // Return error status if deletion failed
+        }
         return 0;
     }
 
@@ -286,4 +311,36 @@ void viewItinerary(const std::string& id) {
     std::cout << itinerary.description << '\n';
 
     std::cout << std::string(50, '=') << '\n';
+}
+
+bool deleteItinerary(const std::string& id) {
+    // Create storage manager with explicit path
+    travel_planner::StorageManager storageManager("data/itineraries.json");
+
+    // Load all itineraries
+    std::vector<travel_planner::Itinerary> itineraries = storageManager.loadAll();
+
+    // Find the itinerary with the specified ID
+    auto it = std::find_if(itineraries.begin(), itineraries.end(),
+        [&id](const travel_planner::Itinerary& itinerary) {
+            return itinerary.id == id;
+        });
+
+    if (it == itineraries.end()) {
+        std::cerr << "Error: No itinerary found with ID '" << id << "'\n";
+        return false;
+    }
+
+    // Store the name for confirmation message
+    std::string name = it->name;
+
+    // Remove the itinerary from the vector
+    itineraries.erase(it);
+
+    // Save the updated list back to storage
+    storageManager.saveAll(itineraries);
+
+    // Confirmation message
+    std::cout << "Successfully deleted itinerary '" << name << "' (ID: " << id << ")\n";
+    return true;
 }

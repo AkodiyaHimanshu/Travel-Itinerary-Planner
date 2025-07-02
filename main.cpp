@@ -24,6 +24,7 @@ bool isKnownOption(const std::string& option);
 std::string findUnknownOption(int argc, char* argv[]);
 std::string generateUUID();
 void addItinerary();
+void listItineraries();
 std::string promptInput(const std::string& prompt, bool allowEmpty = false);
 
 int main(int argc, char* argv[]) {
@@ -52,6 +53,11 @@ int main(int argc, char* argv[]) {
     // Add itinerary option
     if (hasOption(argc, argv, "add")) {
         addItinerary();
+        return 0;
+    }
+
+    if (hasOption(argc, argv, "list")) {
+        listItineraries();
         return 0;
     }
 
@@ -191,10 +197,10 @@ void listItineraries() {
     std::cout << "Loading itineraries...\n";
 
     // Create storage manager with default path
-	travel_planner::StorageManager storageManager;
+	travel_planner::StorageManager storageManager("data/itineraries.json");
 
     // Load all itineraries
-    std::vector<Itinerary> itineraries = storageManager.loadAll();
+    std::vector<travel_planner::Itinerary> itineraries = storageManager.loadAll();
 
     if (itineraries.empty()) {
         std::cout << "No itineraries found.\n";
@@ -226,20 +232,4 @@ void listItineraries() {
     // Print table footer
     std::cout << std::string(idWidth + nameWidth + 3, '-') << '\n';
     std::cout << itineraries.size() << " itinerary/ies found.\n";
-}
-
-// Update your main function to handle the 'list' subcommand
-// Add something like this in your argument processing section:
-
-// In main() where you process command-line arguments:
-if (argc > 1) {
-    std::string command = argv[1];
-
-    // Add this case to your existing command handling
-    if (command == "list") {
-        listItineraries();
-        return 0;
-    }
-
-    // Your other command handling (add, etc.)
 }

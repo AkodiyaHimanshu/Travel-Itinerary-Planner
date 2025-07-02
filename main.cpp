@@ -10,6 +10,7 @@ using namespace std;
 #include <vector>
 #include <algorithm>
 #include <random>
+#include <iomanip>
 #include "include/version.h"
 #include "include/Itinerary.h"
 #include "src/StorageManager.h"
@@ -27,7 +28,6 @@ std::string promptInput(const std::string& prompt, bool allowEmpty = false);
 
 int main(int argc, char* argv[]) {
     displayBanner();
-    addItinerary();
 
     // Check for unknown options
     std::string unknownOption = findUnknownOption(argc, argv);
@@ -185,4 +185,61 @@ void addItinerary() {
     storageManager.saveAll(itineraries);
 
     std::cout << "Itinerary added successfully with ID: " << id << std::endl;
+}
+
+void listItineraries() {
+    std::cout << "Loading itineraries...\n";
+
+    // Create storage manager with default path
+    StorageManager storageManager;
+
+    // Load all itineraries
+    std::vector<Itinerary> itineraries = storageManager.loadAll();
+
+    if (itineraries.empty()) {
+        std::cout << "No itineraries found.\n";
+        return;
+    }
+
+    // Calculate column widths (minimum width plus some padding)
+    size_t idWidth = 10;  // Minimum width for ID column
+    size_t nameWidth = 20; // Minimum width for Name column
+
+    // Adjust column widths based on actual data
+    for (const auto& itinerary : itineraries) {
+        idWidth = std::max(idWidth, itinerary.id.length() + 2);
+        nameWidth = std::max(nameWidth, itinerary.name.length() + 2);
+    }
+
+    // Print table header
+    std::cout << std::string(idWidth + nameWidth + 3, '-') << '\n';
+    std::cout << "| " << std::left << std::setw(idWidth) << "ID"
+        << "| " << std::setw(nameWidth) << "Name" << "|\n";
+    std::cout << std::string(idWidth + nameWidth + 3, '-') << '\n';
+
+    // Print each itinerary
+    for (const auto& itinerary : itineraries) {
+        std::cout << "| " << std::left << std::setw(idWidth) << itinerary.id
+            << "| " << std::setw(nameWidth) << itinerary.name << "|\n";
+    }
+
+    // Print table footer
+    std::cout << std::string(idWidth + nameWidth + 3, '-') << '\n';
+    std::cout << itineraries.size() << " itinerary/ies found.\n";
+}
+
+// Update your main function to handle the 'list' subcommand
+// Add something like this in your argument processing section:
+
+// In main() where you process command-line arguments:
+if (argc > 1) {
+    std::string command = argv[1];
+
+    // Add this case to your existing command handling
+    if (command == "list") {
+        listItineraries();
+        return 0;
+    }
+
+    // Your other command handling (add, etc.)
 }

@@ -25,6 +25,7 @@ std::string findUnknownOption(int argc, char* argv[]);
 std::string generateUUID();
 void addItinerary();
 void listItineraries();
+void viewItinerary(const std::string& id);
 std::string promptInput(const std::string& prompt, bool allowEmpty = false);
 
 int main(int argc, char* argv[]) {
@@ -58,6 +59,18 @@ int main(int argc, char* argv[]) {
 
     if (hasOption(argc, argv, "list")) {
         listItineraries();
+        return 0;
+    }
+
+    if (hasOption(argc, argv, "view")) {
+        if (argc < 3) {
+            std::cerr << "Error: 'view' command requires an itinerary ID\n";
+            std::cerr << "Usage: " << argv[0] << " view <itinerary_id>\n";
+            return 1;
+        }
+
+        std::string id = argv[2];
+        viewItinerary(id);
         return 0;
     }
 
@@ -232,4 +245,45 @@ void listItineraries() {
     // Print table footer
     std::cout << std::string(idWidth + nameWidth + 3, '-') << '\n';
     std::cout << itineraries.size() << " itinerary/ies found.\n";
+}
+
+void viewItinerary(const std::string& id) {
+    // Create storage manager with explicit path
+    travel_planner::StorageManager storageManager("data/itineraries.json");
+
+    // Load all itineraries
+    std::vector<travel_planner::Itinerary> itineraries = storageManager.loadAll();
+
+    // Find the itinerary with the specified ID
+    auto it = std::find_if(itineraries.begin(), itineraries.end(),
+        [&id](const travel_planner::Itinerary& itinerary) {
+            return itinerary.id == id;
+        });
+
+    if (it == itineraries.end()) {
+        std::cerr << "Error: No itinerary found with ID '" << id << "'\n";
+        return;
+    }
+
+    // Display the itinerary details in a formatted way
+    const travel_planner::Itinerary& itinerary = *it;
+
+    // Calculate the width for consistent formatting
+    size_t labelWidth = 12; // Width for the labels
+
+    std::cout << std::string(50, '=') << '\n';
+    std::cout << "ITINERARY DETAILS\n";
+    std::cout << std::string(50, '-') << '\n';
+
+    std::cout << std::left << std::setw(labelWidth) << "ID:" << itinerary.id << '\n';
+    std::cout << std::left << std::setw(labelWidth) << "Name:" << itinerary.name << '\n';
+    std::cout << std::left << std::setw(labelWidth) << "Start Date:" << itinerary.start_date << '\n';
+    std::cout << std::left << std::setw(labelWidth) << "End Date:" << itinerary.end_date << '\n';
+    std::cout << std::left << std::setw(labelWidth) << "Description:" << '\n';
+
+    // Format description with word wrapping for better readability
+    // Simple approach: print the description as is
+    std::cout << itinerary.description << '\n';
+
+    std::cout << std::string(50, '=') << '\n';
 }

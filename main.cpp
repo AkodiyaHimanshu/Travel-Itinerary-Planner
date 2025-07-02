@@ -191,7 +191,7 @@ void listItineraries() {
     std::cout << "Loading itineraries...\n";
 
     // Create storage manager with default path
-    StorageManager storageManager;
+	travel_planner::StorageManager storageManager;
 
     // Load all itineraries
     std::vector<Itinerary> itineraries = storageManager.loadAll();

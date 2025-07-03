@@ -27,6 +27,7 @@ void listItineraries();
 void viewItinerary(const std::string& id);
 bool deleteItinerary(const std::string& id);
 bool addTagToItinerary(const std::string& id, const std::string& tag, bool& alreadyExists);
+bool removeTagFromItinerary(const std::string& id, const std::string& tag, bool& tagExists);
 std::string promptInput(const std::string& prompt, bool allowEmpty = false);
 
 int main(int argc, char* argv[]) {
@@ -119,6 +120,25 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    else if (argc >= 5 && std::string(argv[1]) == "tag" && std::string(argv[2]) == "remove") {
+        std::string id = argv[3];
+        std::string tag = argv[4];
+
+        bool tagExists = false;
+        if (removeTagFromItinerary(id, tag, tagExists)) {
+            if (tagExists) {
+                std::cout << "Tag \"" << tag << "\" removed successfully from itinerary." << std::endl;
+            }
+            else {
+                std::cout << "Tag \"" << tag << "\" does not exist for this itinerary." << std::endl;
+            }
+        }
+        else {
+            std::cerr << "Error: Itinerary with ID \"" << id << "\" not found." << std::endl;
+            return 1;
+        }
+    }
+
     // If no valid command is provided
     std::cerr << "Error: Invalid command" << std::endl;
     displayHelp();
@@ -138,14 +158,15 @@ void displayBanner() {
 void displayHelp() {
     std::cout << "Usage: travel_planner [command] [options]\n\n";
     std::cout << "Commands:\n";
-    std::cout << "  add                    Create a new itinerary\n";
-    std::cout << "  list                   List all itineraries\n";
-    std::cout << "  view <id>              View details of an itinerary\n";
-    std::cout << "  delete <id>            Delete an itinerary\n";
-    std::cout << "  tag add <id> <tag>     Add a tag to an itinerary\n"; // New line
+    std::cout << "  add                     Create a new itinerary\n";
+    std::cout << "  list                    List all itineraries\n";
+    std::cout << "  view <id>               View details of an itinerary\n";
+    std::cout << "  delete <id>             Delete an itinerary\n";
+    std::cout << "  tag add <id> <tag>      Add a tag to an itinerary\n";
+    std::cout << "  tag remove <id> <tag>   Remove a tag from an itinerary\n"; // New line
     std::cout << "\nOptions:\n";
-    std::cout << "  --help, -h             Display this help message\n";
-    std::cout << "  --version              Display version information\n";
+    std::cout << "  --help, -h              Display this help message\n";
+    std::cout << "  --version               Display version information\n";
 }
 
 // Display version information
@@ -389,6 +410,39 @@ bool addTagToItinerary(const std::string& id, const std::string& tag, bool& alre
     // Add the tag
     alreadyExists = false;
     tags.push_back(tag);
+
+    // Save changes
+    storageManager.saveAll(itineraries);
+    return true;
+}
+
+bool removeTagFromItinerary(const std::string& id, const std::string& tag, bool& tagExists) {
+    travel_planner::StorageManager storageManager("data/itineraries.json");
+    auto itineraries = storageManager.loadAll();
+
+    // Find itinerary by ID
+    auto it = std::find_if(itineraries.begin(), itineraries.end(),
+        [&id](const travel_planner::Itinerary& itinerary) {
+            return itinerary.id == id;
+        });
+
+    if (it == itineraries.end()) {
+        return false; // Itinerary not found
+    }
+
+    // Check if tag exists and remove it
+    auto& tags = it->tags;
+    auto tagIt = std::find(tags.begin(), tags.end(), tag);
+
+    if (tagIt == tags.end()) {
+        // Tag doesn't exist in the itinerary
+        tagExists = false;
+        return true; // Return true because the itinerary exists, but tag doesn't
+    }
+
+    // Remove the tag
+    tagExists = true;
+    tags.erase(tagIt);
 
     // Save changes
     storageManager.saveAll(itineraries);

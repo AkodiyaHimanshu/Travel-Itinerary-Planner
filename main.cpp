@@ -28,6 +28,7 @@ void viewItinerary(const std::string& id);
 bool deleteItinerary(const std::string& id);
 bool addTagToItinerary(const std::string& id, const std::string& tag, bool& alreadyExists);
 bool removeTagFromItinerary(const std::string& id, const std::string& tag, bool& tagExists);
+void listTagsForItinerary(const std::string& id);
 std::string promptInput(const std::string& prompt, bool allowEmpty = false);
 
 int main(int argc, char* argv[]) {
@@ -141,6 +142,15 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    else if (argc >= 3 && std::string(argv[1]) == "tag" && std::string(argv[2]) == "list") {
+        if (argc < 4) {
+            std::cerr << "Error: Missing itinerary ID." << std::endl;
+            std::cout << "Usage: " << argv[0] << " tag list <id>" << std::endl;
+            return 1;
+        }
+        listTagsForItinerary(argv[3]);
+        }
+
     // If no valid command is provided
     std::cerr << "Error: Invalid command" << std::endl;
     displayHelp();
@@ -158,17 +168,22 @@ void displayBanner() {
 
 // Display help information
 void displayHelp() {
-    std::cout << "Usage: travel_planner [command] [options]\n\n";
-    std::cout << "Commands:\n";
-    std::cout << "  add                     Create a new itinerary\n";
-    std::cout << "  list                    List all itineraries\n";
-    std::cout << "  view <id>               View details of an itinerary\n";
-    std::cout << "  delete <id>             Delete an itinerary\n";
-    std::cout << "  tag add <id> <tag>      Add a tag to an itinerary\n";
-    std::cout << "  tag remove <id> <tag>   Remove a tag from an itinerary\n"; // New line
-    std::cout << "\nOptions:\n";
-    std::cout << "  --help, -h              Display this help message\n";
-    std::cout << "  --version               Display version information\n";
+    std::cout << "Usage:" << std::endl;
+    std::cout << "  travel_planner [options]" << std::endl;
+    std::cout << "  travel_planner <command> [arguments]" << std::endl;
+    std::cout << std::endl;
+    std::cout << "Options:" << std::endl;
+    std::cout << "  -h, --help     Display this help message" << std::endl;
+    std::cout << "  --version      Display version information" << std::endl;
+    std::cout << std::endl;
+    std::cout << "Commands:" << std::endl;
+    std::cout << "  add                   Create a new travel itinerary" << std::endl;
+    std::cout << "  list                  List all itineraries" << std::endl;
+    std::cout << "  view <id>             View details of a specific itinerary" << std::endl;
+    std::cout << "  delete <id>           Delete an itinerary" << std::endl;
+    std::cout << "  tag add <id> <tag>    Add a tag to an itinerary" << std::endl;
+    std::cout << "  tag remove <id> <tag> Remove a tag from an itinerary" << std::endl;
+    std::cout << "  tag list <id>         List all tags for an itinerary" << std::endl;
 }
 
 // Display version information

@@ -26,6 +26,10 @@ void addItinerary();
 void listItineraries();
 void viewItinerary(const std::string& id);
 bool deleteItinerary(const std::string& id);
+bool addTagToItinerary(const std::string& id, const std::string& tag, bool& alreadyExists);
+bool removeTagFromItinerary(const std::string& id, const std::string& tag, bool& tagExists);
+void listTagsForItinerary(const std::string& id);
+void searchItineraries(const std::string& namePattern);
 std::string promptInput(const std::string& prompt, bool allowEmpty = false);
 
 int main(int argc, char* argv[]) {
@@ -40,29 +44,29 @@ int main(int argc, char* argv[]) {
     }
 
     // Help option
-    if (argc == 1 || hasOption(argc, argv, "--help") || hasOption(argc, argv, "-h")) {
+    else if (argc == 1 || hasOption(argc, argv, "--help") || hasOption(argc, argv, "-h")) {
         displayHelp();
         return 0;
     }
 
     // Version option
-    if (hasOption(argc, argv, "--version")) {
+    else if (hasOption(argc, argv, "--version")) {
         displayVersion();
         return 0;
     }
 
     // Add itinerary option
-    if (hasOption(argc, argv, "add")) {
+    else if (hasOption(argc, argv, "add") && argc < 3) {
         addItinerary();
         return 0;
     }
 
-    if (hasOption(argc, argv, "list")) {
+    else if (hasOption(argc, argv, "list") && argc < 3) {
         listItineraries();
         return 0;
     }
 
-    if (hasOption(argc, argv, "view")) {
+    else if (hasOption(argc, argv, "view") && argc < 3) {
         if (argc < 3) {
             std::cerr << "Error: 'view' command requires an itinerary ID\n";
             std::cerr << "Usage: " << argv[0] << " view <itinerary_id>\n";
@@ -74,7 +78,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    if (hasOption(argc, argv, "delete")) {
+    else if (hasOption(argc, argv, "delete") && argc < 3) {
         if (argc < 3) {
             std::cerr << "Error: 'delete' command requires an itinerary ID\n";
             std::cerr << "Usage: " << argv[0] << " delete <itinerary_id>\n";
@@ -99,6 +103,78 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    else if (argc >= 5 && std::string(argv[1]) == "tag" && std::string(argv[2]) == "add") {
+        std::string id = argv[3];
+        std::string tag = argv[4];
+
+        bool alreadyExists = false;
+        if (addTagToItinerary(id, tag, alreadyExists)) {
+            if (alreadyExists) {
+                std::cout << "Tag \"" << tag << "\" already exists for itinerary." << std::endl;
+            }
+            else {
+                std::cout << "Tag \"" << tag << "\" added successfully to itinerary." << std::endl;
+            }
+        }
+        else {
+            std::cerr << "Error: Itinerary with ID \"" << id << "\" not found." << std::endl;
+            return 1;
+        }
+        return 0;
+    }
+
+    else if (argc >= 5 && std::string(argv[1]) == "tag" && std::string(argv[2]) == "remove") {
+        std::string id = argv[3];
+        std::string tag = argv[4];
+
+        bool tagExists = false;
+        if (removeTagFromItinerary(id, tag, tagExists)) {
+            if (tagExists) {
+                std::cout << "Tag \"" << tag << "\" removed successfully from itinerary." << std::endl;
+            }
+            else {
+                std::cout << "Tag \"" << tag << "\" does not exist for this itinerary." << std::endl;
+            }
+        }
+        else {
+            std::cerr << "Error: Itinerary with ID \"" << id << "\" not found." << std::endl;
+            return 1;
+        }
+        return 0;
+    }
+
+    else if (argc >= 3 && std::string(argv[1]) == "tag" && std::string(argv[2]) == "list") {
+        if (argc < 4) {
+            std::cerr << "Error: Missing itinerary ID." << std::endl;
+            std::cout << "Usage: " << argv[0] << " tag list <id>" << std::endl;
+            return 1;
+        }
+        listTagsForItinerary(argv[3]);
+        return 0;
+    }
+
+    else if (argc >= 2 && std::string(argv[1]) == "search") {
+        bool hasNameOption = false;
+        std::string namePattern;
+
+        for (int i = 2; i < argc - 1; i++) {
+            if (std::string(argv[i]) == "--name") {
+                hasNameOption = true;
+                namePattern = argv[i + 1];
+                break;
+            }
+        }
+
+        if (!hasNameOption) {
+            std::cerr << "Error: Missing --name option." << std::endl;
+            std::cout << "Usage: travel_planner search --name <pattern>" << std::endl;
+            return 1;
+        }
+
+        searchItineraries(namePattern);
+        return 0;
+    }
+
     // If no valid command is provided
     std::cerr << "Error: Invalid command" << std::endl;
     displayHelp();
@@ -116,16 +192,23 @@ void displayBanner() {
 
 // Display help information
 void displayHelp() {
-    std::cout << "Usage: travel_planner [OPTION]..." << std::endl;
+    std::cout << "Usage:" << std::endl;
+    std::cout << "  travel_planner [options]" << std::endl;
+    std::cout << "  travel_planner <command> [arguments]" << std::endl;
+    std::cout << std::endl;
     std::cout << "Options:" << std::endl;
-    std::cout << "  --help, -h    Display this help message" << std::endl;
-    std::cout << "  --version     Display version information" << std::endl;
+    std::cout << "  -h, --help     Display this help message" << std::endl;
+    std::cout << "  --version      Display version information" << std::endl;
+    std::cout << std::endl;
     std::cout << "Commands:" << std::endl;
-    std::cout << "  add           Add a new itinerary" << std::endl;
-    std::cout << "  list          List all itineraries" << std::endl;
-    std::cout << "  view ID       View details of a specific itinerary" << std::endl;
-    std::cout << "  edit ID       Edit an existing itinerary" << std::endl;
-    std::cout << "  delete ID     Delete an itinerary" << std::endl;
+    std::cout << "  add                   Create a new travel itinerary" << std::endl;
+    std::cout << "  list                  List all itineraries" << std::endl;
+    std::cout << "  view <id>             View details of a specific itinerary" << std::endl;
+    std::cout << "  delete <id>           Delete an itinerary" << std::endl;
+    std::cout << "  tag add <id> <tag>    Add a tag to an itinerary" << std::endl;
+    std::cout << "  tag remove <id> <tag> Remove a tag from an itinerary" << std::endl;
+    std::cout << "  tag list <id>         List all tags for an itinerary" << std::endl;
+    std::cout << "  search --name <pattern>  Search for itineraries by name" << std::endl;
 }
 
 // Display version information
@@ -144,7 +227,7 @@ bool hasOption(int argc, char* argv[], const std::string& option) {
 // Check if an option is recognized by the program
 bool isKnownOption(const std::string& option) {
     static const std::vector<std::string> knownOptions = {
-        "--help", "-h", "--version", "add", "list", "view", "edit", "delete"
+        "--help", "-h", "--version", "add", "list", "view", "edit", "delete", "--name"
     };
 
     return std::find(knownOptions.begin(), knownOptions.end(), option) != knownOptions.end();
@@ -343,4 +426,156 @@ bool deleteItinerary(const std::string& id) {
     // Confirmation message
     std::cout << "Successfully deleted itinerary '" << name << "' (ID: " << id << ")\n";
     return true;
+}
+
+bool addTagToItinerary(const std::string& id, const std::string& tag, bool& alreadyExists) {
+    // Ensure consistent storage path
+    const std::string storagePath = "data/itineraries.json";
+
+    travel_planner::StorageManager storageManager(storagePath);
+    auto itineraries = storageManager.loadAll();
+
+    // Find itinerary by ID
+    auto it = std::find_if(itineraries.begin(), itineraries.end(),
+        [&id](const travel_planner::Itinerary& itinerary) {
+            return itinerary.id == id;
+        });
+
+    if (it == itineraries.end()) {
+        return false;
+    }
+
+    // Check if tag already exists
+    auto& tags = it->tags;
+    if (std::find(tags.begin(), tags.end(), tag) != tags.end()) {
+        alreadyExists = true;
+        return true;
+    }
+
+    // Add the tag
+    alreadyExists = false;
+    tags.push_back(tag);
+
+    // Save changes
+    storageManager.saveAll(itineraries);
+    return true;
+}
+
+bool removeTagFromItinerary(const std::string& id, const std::string& tag, bool& tagExists) {
+    // Use EXACTLY the same storage path as in addTagToItinerary
+    const std::string storagePath = "data/itineraries.json";
+
+    travel_planner::StorageManager storageManager(storagePath);
+    auto itineraries = storageManager.loadAll();
+
+    // Find itinerary by ID - same logic as in addTagToItinerary
+    auto it = std::find_if(itineraries.begin(), itineraries.end(),
+        [&id](const travel_planner::Itinerary& itinerary) {
+            return itinerary.id == id;
+        });
+
+    if (it == itineraries.end()) {
+        return false; // Itinerary not found
+    }
+
+    // Check if tag exists and remove it
+    auto& tags = it->tags;
+    auto tagIt = std::find(tags.begin(), tags.end(), tag);
+
+    if (tagIt == tags.end()) {
+        tagExists = false;
+        return true;
+    }
+
+    // Remove the tag
+    tagExists = true;
+    tags.erase(tagIt);
+
+    // Save changes
+    storageManager.saveAll(itineraries);
+    return true;
+}
+
+void listTagsForItinerary(const std::string& id) {
+    travel_planner::StorageManager storageManager("data/itineraries.json");
+    auto itineraries = storageManager.loadAll();
+
+    auto it = std::find_if(itineraries.begin(), itineraries.end(),
+        [&id](const travel_planner::Itinerary& itinerary) {
+            return itinerary.id == id;
+        });
+
+    if (it == itineraries.end()) {
+        std::cerr << "Error: Itinerary with ID '" << id << "' not found." << std::endl;
+        return;
+    }
+
+    std::cout << "Tags for itinerary '" << it->name << "' (ID: " << it->id << "):" << std::endl;
+
+    if (it->tags.empty()) {
+        std::cout << "  No tags found." << std::endl;
+        return;
+    }
+
+    for (const auto& tag : it->tags) {
+        std::cout << "  - " << tag << std::endl;
+    }
+
+    std::cout << std::endl << "Total: " << it->tags.size() << " tag(s)" << std::endl;
+}
+
+void searchItineraries(const std::string& namePattern) {
+    travel_planner::StorageManager storageManager("data/itineraries.json");
+    auto itineraries = storageManager.loadAll();
+
+    // Filter itineraries by name pattern (case-insensitive substring match)
+    std::vector<travel_planner::Itinerary> matchingItineraries;
+    std::string patternLower = namePattern;
+    std::transform(patternLower.begin(), patternLower.end(), patternLower.begin(),
+        [](unsigned char c) { return std::tolower(c); });
+
+    for (const auto& itinerary : itineraries) {
+        std::string nameLower = itinerary.name;
+        std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(),
+            [](unsigned char c) { return std::tolower(c); });
+
+        if (nameLower.find(patternLower) != std::string::npos) {
+            matchingItineraries.push_back(itinerary);
+        }
+    }
+
+    // Display results in table format (similar to listItineraries)
+    if (matchingItineraries.empty()) {
+        std::cout << "No itineraries found matching pattern: '" << namePattern << "'" << std::endl;
+        return;
+    }
+
+    // Calculate column widths
+    size_t idColWidth = 2;  // "ID" heading
+    size_t nameColWidth = 4;  // "Name" heading
+
+    for (const auto& itinerary : matchingItineraries) {
+        idColWidth = std::max(idColWidth, itinerary.id.length());
+        nameColWidth = std::max(nameColWidth, itinerary.name.length());
+    }
+
+    // Add padding
+    idColWidth += 2;
+    nameColWidth += 2;
+
+    // Print header
+    std::cout << std::string(idColWidth + nameColWidth + 1, '-') << std::endl;
+    std::cout << '|' << std::left << std::setw(idColWidth) << " ID"
+        << '|' << std::setw(nameColWidth) << " Name" << '|' << std::endl;
+    std::cout << std::string(idColWidth + nameColWidth + 1, '-') << std::endl;
+
+    // Print rows
+    for (const auto& itinerary : matchingItineraries) {
+        std::cout << '|' << std::setw(idColWidth) << " " + itinerary.id
+            << '|' << std::setw(nameColWidth) << " " + itinerary.name << '|' << std::endl;
+    }
+
+    // Print footer
+    std::cout << std::string(idColWidth + nameColWidth + 1, '-') << std::endl;
+    std::cout << matchingItineraries.size() << " itinerary/ies found" << std::endl;
 }

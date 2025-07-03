@@ -29,6 +29,7 @@ bool deleteItinerary(const std::string& id);
 bool addTagToItinerary(const std::string& id, const std::string& tag, bool& alreadyExists);
 bool removeTagFromItinerary(const std::string& id, const std::string& tag, bool& tagExists);
 void listTagsForItinerary(const std::string& id);
+void searchItineraries(const std::string& namePattern);
 std::string promptInput(const std::string& prompt, bool allowEmpty = false);
 
 int main(int argc, char* argv[]) {
@@ -55,17 +56,17 @@ int main(int argc, char* argv[]) {
     }
 
     // Add itinerary option
-    else if (hasOption(argc, argv, "add") && argc < 5) {
+    else if (hasOption(argc, argv, "add") && argc < 3) {
         addItinerary();
         return 0;
     }
 
-    else if (hasOption(argc, argv, "list") && argc < 5) {
+    else if (hasOption(argc, argv, "list") && argc < 3) {
         listItineraries();
         return 0;
     }
 
-    else if (hasOption(argc, argv, "view") && argc < 5) {
+    else if (hasOption(argc, argv, "view") && argc < 3) {
         if (argc < 3) {
             std::cerr << "Error: 'view' command requires an itinerary ID\n";
             std::cerr << "Usage: " << argv[0] << " view <itinerary_id>\n";
@@ -77,7 +78,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    else if (hasOption(argc, argv, "delete") && argc < 5) {
+    else if (hasOption(argc, argv, "delete") && argc < 3) {
         if (argc < 3) {
             std::cerr << "Error: 'delete' command requires an itinerary ID\n";
             std::cerr << "Usage: " << argv[0] << " delete <itinerary_id>\n";
@@ -149,7 +150,30 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         listTagsForItinerary(argv[3]);
+        return 0;
+    }
+
+    else if (argc >= 2 && std::string(argv[1]) == "search") {
+        bool hasNameOption = false;
+        std::string namePattern;
+
+        for (int i = 2; i < argc - 1; i++) {
+            if (std::string(argv[i]) == "--name") {
+                hasNameOption = true;
+                namePattern = argv[i + 1];
+                break;
+            }
         }
+
+        if (!hasNameOption) {
+            std::cerr << "Error: Missing --name option." << std::endl;
+            std::cout << "Usage: travel_planner search --name <pattern>" << std::endl;
+            return 1;
+        }
+
+        searchItineraries(namePattern);
+        return 0;
+    }
 
     // If no valid command is provided
     std::cerr << "Error: Invalid command" << std::endl;
@@ -184,6 +208,7 @@ void displayHelp() {
     std::cout << "  tag add <id> <tag>    Add a tag to an itinerary" << std::endl;
     std::cout << "  tag remove <id> <tag> Remove a tag from an itinerary" << std::endl;
     std::cout << "  tag list <id>         List all tags for an itinerary" << std::endl;
+    std::cout << "  search --name <pattern>  Search for itineraries by name" << std::endl;
 }
 
 // Display version information
@@ -497,4 +522,60 @@ void listTagsForItinerary(const std::string& id) {
     }
 
     std::cout << std::endl << "Total: " << it->tags.size() << " tag(s)" << std::endl;
+}
+
+void searchItineraries(const std::string& namePattern) {
+    travel_planner::StorageManager storageManager("data/itineraries.json");
+    auto itineraries = storageManager.loadAll();
+
+    // Filter itineraries by name pattern (case-insensitive substring match)
+    std::vector<travel_planner::Itinerary> matchingItineraries;
+    std::string patternLower = namePattern;
+    std::transform(patternLower.begin(), patternLower.end(), patternLower.begin(),
+        [](unsigned char c) { return std::tolower(c); });
+
+    for (const auto& itinerary : itineraries) {
+        std::string nameLower = itinerary.name;
+        std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(),
+            [](unsigned char c) { return std::tolower(c); });
+
+        if (nameLower.find(patternLower) != std::string::npos) {
+            matchingItineraries.push_back(itinerary);
+        }
+    }
+
+    // Display results in table format (similar to listItineraries)
+    if (matchingItineraries.empty()) {
+        std::cout << "No itineraries found matching pattern: '" << namePattern << "'" << std::endl;
+        return;
+    }
+
+    // Calculate column widths
+    size_t idColWidth = 2;  // "ID" heading
+    size_t nameColWidth = 4;  // "Name" heading
+
+    for (const auto& itinerary : matchingItineraries) {
+        idColWidth = std::max(idColWidth, itinerary.id.length());
+        nameColWidth = std::max(nameColWidth, itinerary.name.length());
+    }
+
+    // Add padding
+    idColWidth += 2;
+    nameColWidth += 2;
+
+    // Print header
+    std::cout << std::string(idColWidth + nameColWidth + 1, '-') << std::endl;
+    std::cout << '|' << std::left << std::setw(idColWidth) << " ID"
+        << '|' << std::setw(nameColWidth) << " Name" << '|' << std::endl;
+    std::cout << std::string(idColWidth + nameColWidth + 1, '-') << std::endl;
+
+    // Print rows
+    for (const auto& itinerary : matchingItineraries) {
+        std::cout << '|' << std::setw(idColWidth) << " " + itinerary.id
+            << '|' << std::setw(nameColWidth) << " " + itinerary.name << '|' << std::endl;
+    }
+
+    // Print footer
+    std::cout << std::string(idColWidth + nameColWidth + 1, '-') << std::endl;
+    std::cout << matchingItineraries.size() << " itinerary/ies found" << std::endl;
 }

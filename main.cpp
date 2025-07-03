@@ -387,7 +387,10 @@ bool deleteItinerary(const std::string& id) {
 }
 
 bool addTagToItinerary(const std::string& id, const std::string& tag, bool& alreadyExists) {
-    travel_planner::StorageManager storageManager("data/itineraries.json");
+    // Ensure consistent storage path
+    const std::string storagePath = "data/itineraries.json";
+
+    travel_planner::StorageManager storageManager(storagePath);
     auto itineraries = storageManager.loadAll();
 
     // Find itinerary by ID
@@ -417,10 +420,13 @@ bool addTagToItinerary(const std::string& id, const std::string& tag, bool& alre
 }
 
 bool removeTagFromItinerary(const std::string& id, const std::string& tag, bool& tagExists) {
-    travel_planner::StorageManager storageManager("data/itineraries.json");
+    // Use EXACTLY the same storage path as in addTagToItinerary
+    const std::string storagePath = "data/itineraries.json";
+
+    travel_planner::StorageManager storageManager(storagePath);
     auto itineraries = storageManager.loadAll();
 
-    // Find itinerary by ID
+    // Find itinerary by ID - same logic as in addTagToItinerary
     auto it = std::find_if(itineraries.begin(), itineraries.end(),
         [&id](const travel_planner::Itinerary& itinerary) {
             return itinerary.id == id;
@@ -435,9 +441,8 @@ bool removeTagFromItinerary(const std::string& id, const std::string& tag, bool&
     auto tagIt = std::find(tags.begin(), tags.end(), tag);
 
     if (tagIt == tags.end()) {
-        // Tag doesn't exist in the itinerary
         tagExists = false;
-        return true; // Return true because the itinerary exists, but tag doesn't
+        return true;
     }
 
     // Remove the tag

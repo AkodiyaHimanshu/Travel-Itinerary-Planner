@@ -26,6 +26,7 @@ void addItinerary();
 void listItineraries();
 void viewItinerary(const std::string& id);
 bool deleteItinerary(const std::string& id);
+bool addTagToItinerary(const std::string& id, const std::string& tag, bool& alreadyExists);
 std::string promptInput(const std::string& prompt, bool allowEmpty = false);
 
 int main(int argc, char* argv[]) {
@@ -40,29 +41,29 @@ int main(int argc, char* argv[]) {
     }
 
     // Help option
-    if (argc == 1 || hasOption(argc, argv, "--help") || hasOption(argc, argv, "-h")) {
+    else if (argc == 1 || hasOption(argc, argv, "--help") || hasOption(argc, argv, "-h")) {
         displayHelp();
         return 0;
     }
 
     // Version option
-    if (hasOption(argc, argv, "--version")) {
+    else if (hasOption(argc, argv, "--version")) {
         displayVersion();
         return 0;
     }
 
     // Add itinerary option
-    if (hasOption(argc, argv, "add")) {
+    else if (hasOption(argc, argv, "add")) {
         addItinerary();
         return 0;
     }
 
-    if (hasOption(argc, argv, "list")) {
+    else if (hasOption(argc, argv, "list")) {
         listItineraries();
         return 0;
     }
 
-    if (hasOption(argc, argv, "view")) {
+    else if (hasOption(argc, argv, "view")) {
         if (argc < 3) {
             std::cerr << "Error: 'view' command requires an itinerary ID\n";
             std::cerr << "Usage: " << argv[0] << " view <itinerary_id>\n";
@@ -74,7 +75,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    if (hasOption(argc, argv, "delete")) {
+    else if (hasOption(argc, argv, "delete")) {
         if (argc < 3) {
             std::cerr << "Error: 'delete' command requires an itinerary ID\n";
             std::cerr << "Usage: " << argv[0] << " delete <itinerary_id>\n";
@@ -99,6 +100,25 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    else if (argc >= 5 && std::string(argv[1]) == "tag" && std::string(argv[2]) == "add") {
+        std::string id = argv[3];
+        std::string tag = argv[4];
+
+        bool alreadyExists = false;
+        if (addTagToItinerary(id, tag, alreadyExists)) {
+            if (alreadyExists) {
+                std::cout << "Tag \"" << tag << "\" already exists for itinerary." << std::endl;
+            }
+            else {
+                std::cout << "Tag \"" << tag << "\" added successfully to itinerary." << std::endl;
+            }
+        }
+        else {
+            std::cerr << "Error: Itinerary with ID \"" << id << "\" not found." << std::endl;
+            return 1;
+        }
+    }
+
     // If no valid command is provided
     std::cerr << "Error: Invalid command" << std::endl;
     displayHelp();
@@ -116,16 +136,16 @@ void displayBanner() {
 
 // Display help information
 void displayHelp() {
-    std::cout << "Usage: travel_planner [OPTION]..." << std::endl;
-    std::cout << "Options:" << std::endl;
-    std::cout << "  --help, -h    Display this help message" << std::endl;
-    std::cout << "  --version     Display version information" << std::endl;
-    std::cout << "Commands:" << std::endl;
-    std::cout << "  add           Add a new itinerary" << std::endl;
-    std::cout << "  list          List all itineraries" << std::endl;
-    std::cout << "  view ID       View details of a specific itinerary" << std::endl;
-    std::cout << "  edit ID       Edit an existing itinerary" << std::endl;
-    std::cout << "  delete ID     Delete an itinerary" << std::endl;
+    std::cout << "Usage: travel_planner [command] [options]\n\n";
+    std::cout << "Commands:\n";
+    std::cout << "  add                    Create a new itinerary\n";
+    std::cout << "  list                   List all itineraries\n";
+    std::cout << "  view <id>              View details of an itinerary\n";
+    std::cout << "  delete <id>            Delete an itinerary\n";
+    std::cout << "  tag add <id> <tag>     Add a tag to an itinerary\n"; // New line
+    std::cout << "\nOptions:\n";
+    std::cout << "  --help, -h             Display this help message\n";
+    std::cout << "  --version              Display version information\n";
 }
 
 // Display version information
@@ -342,5 +362,35 @@ bool deleteItinerary(const std::string& id) {
 
     // Confirmation message
     std::cout << "Successfully deleted itinerary '" << name << "' (ID: " << id << ")\n";
+    return true;
+}
+
+bool addTagToItinerary(const std::string& id, const std::string& tag, bool& alreadyExists) {
+    travel_planner::StorageManager storageManager("data/itineraries.json");
+    auto itineraries = storageManager.loadAll();
+
+    // Find itinerary by ID
+    auto it = std::find_if(itineraries.begin(), itineraries.end(),
+        [&id](const travel_planner::Itinerary& itinerary) {
+            return itinerary.id == id;
+        });
+
+    if (it == itineraries.end()) {
+        return false;
+    }
+
+    // Check if tag already exists
+    auto& tags = it->tags;
+    if (std::find(tags.begin(), tags.end(), tag) != tags.end()) {
+        alreadyExists = true;
+        return true;
+    }
+
+    // Add the tag
+    alreadyExists = false;
+    tags.push_back(tag);
+
+    // Save changes
+    storageManager.saveAll(itineraries);
     return true;
 }

@@ -54,17 +54,17 @@ int main(int argc, char* argv[]) {
     }
 
     // Add itinerary option
-    else if (hasOption(argc, argv, "add")) {
+    else if (hasOption(argc, argv, "add") && argc < 5) {
         addItinerary();
         return 0;
     }
 
-    else if (hasOption(argc, argv, "list")) {
+    else if (hasOption(argc, argv, "list") && argc < 5) {
         listItineraries();
         return 0;
     }
 
-    else if (hasOption(argc, argv, "view")) {
+    else if (hasOption(argc, argv, "view") && argc < 5) {
         if (argc < 3) {
             std::cerr << "Error: 'view' command requires an itinerary ID\n";
             std::cerr << "Usage: " << argv[0] << " view <itinerary_id>\n";
@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    else if (hasOption(argc, argv, "delete")) {
+    else if (hasOption(argc, argv, "delete") && argc < 5) {
         if (argc < 3) {
             std::cerr << "Error: 'delete' command requires an itinerary ID\n";
             std::cerr << "Usage: " << argv[0] << " delete <itinerary_id>\n";
@@ -118,6 +118,7 @@ int main(int argc, char* argv[]) {
             std::cerr << "Error: Itinerary with ID \"" << id << "\" not found." << std::endl;
             return 1;
         }
+        return 0;
     }
 
     else if (argc >= 5 && std::string(argv[1]) == "tag" && std::string(argv[2]) == "remove") {
@@ -137,6 +138,7 @@ int main(int argc, char* argv[]) {
             std::cerr << "Error: Itinerary with ID \"" << id << "\" not found." << std::endl;
             return 1;
         }
+        return 0;
     }
 
     // If no valid command is provided

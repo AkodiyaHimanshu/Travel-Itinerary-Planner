@@ -455,3 +455,31 @@ bool removeTagFromItinerary(const std::string& id, const std::string& tag, bool&
     storageManager.saveAll(itineraries);
     return true;
 }
+
+void listTagsForItinerary(const std::string& id) {
+    travel_planner::StorageManager storageManager("data/itineraries.json");
+    auto itineraries = storageManager.loadAll();
+
+    auto it = std::find_if(itineraries.begin(), itineraries.end(),
+        [&id](const travel_planner::Itinerary& itinerary) {
+            return itinerary.id == id;
+        });
+
+    if (it == itineraries.end()) {
+        std::cerr << "Error: Itinerary with ID '" << id << "' not found." << std::endl;
+        return;
+    }
+
+    std::cout << "Tags for itinerary '" << it->name << "' (ID: " << it->id << "):" << std::endl;
+
+    if (it->tags.empty()) {
+        std::cout << "  No tags found." << std::endl;
+        return;
+    }
+
+    for (const auto& tag : it->tags) {
+        std::cout << "  - " << tag << std::endl;
+    }
+
+    std::cout << std::endl << "Total: " << it->tags.size() << " tag(s)" << std::endl;
+}

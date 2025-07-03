@@ -227,7 +227,7 @@ bool hasOption(int argc, char* argv[], const std::string& option) {
 // Check if an option is recognized by the program
 bool isKnownOption(const std::string& option) {
     static const std::vector<std::string> knownOptions = {
-        "--help", "-h", "--version", "add", "list", "view", "edit", "delete"
+        "--help", "-h", "--version", "add", "list", "view", "edit", "delete", "--name"
     };
 
     return std::find(knownOptions.begin(), knownOptions.end(), option) != knownOptions.end();

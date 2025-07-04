@@ -13,6 +13,8 @@ using namespace std;
 #include "include/version.h"
 #include "include/Itinerary.h"
 #include "src/StorageManager.h"
+#include "src/PackingManager.h"
+
 
 // Function declarations
 void displayBanner();
@@ -30,6 +32,10 @@ bool addTagToItinerary(const std::string& id, const std::string& tag, bool& alre
 bool removeTagFromItinerary(const std::string& id, const std::string& tag, bool& tagExists);
 void listTagsForItinerary(const std::string& id);
 void searchItineraries(const std::string& namePattern);
+void addPackingItem(int argc, char* argv[]);
+void listPackingItems(int argc, char* argv[]);
+void packItem(int argc, char* argv[]);
+void removePackingItem(int argc, char* argv[]);
 std::string promptInput(const std::string& prompt, bool allowEmpty = false);
 
 int main(int argc, char* argv[]) {
@@ -175,6 +181,26 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    else if (argc >= 5 && std::string(argv[1]) == "packing" && std::string(argv[2]) == "add") {
+        addPackingItem(argc, argv);
+        return 0;
+	}
+
+    else if (argc >= 4 && std::string(argv[1]) == "packing" && std::string(argv[2]) == "list") {
+        listPackingItems(argc, argv);
+        return 0;
+	}
+
+    else if (argc >= 4 && std::string(argv[1]) == "packing" && std::string(argv[2]) == "pack") {
+        packItem(argc, argv);
+        return 0;
+	}
+
+    else if (argc >= 4 && std::string(argv[1]) == "packing" && std::string(argv[2]) == "remove") {
+        removePackingItem(argc, argv);
+		return 0;
+	}
+
     // If no valid command is provided
     std::cerr << "Error: Invalid command" << std::endl;
     displayHelp();
@@ -193,7 +219,7 @@ void displayBanner() {
 // Display help information
 void displayHelp() {
     std::cout << "Usage:" << std::endl;
-    std::cout << "  travel_planner [options]" << std::endl;
+    std::cout << "Usage: travel_planner [COMMAND] [OPTIONS]" << std::endl;
     std::cout << "  travel_planner <command> [arguments]" << std::endl;
     std::cout << std::endl;
     std::cout << "Options:" << std::endl;
@@ -209,6 +235,10 @@ void displayHelp() {
     std::cout << "  tag remove <id> <tag> Remove a tag from an itinerary" << std::endl;
     std::cout << "  tag list <id>         List all tags for an itinerary" << std::endl;
     std::cout << "  search --name <pattern>  Search for itineraries by name" << std::endl;
+    std::cout << "  packing add <itinerary_id> <item_name> [--qty N]  Add a packing item to an itinerary" << std::endl;
+    std::cout << "  packing list <itinerary_id>         List all packing items for an itinerary" << std::endl;
+    std::cout << "  packing pack <item_id>              Toggle packed status of an item" << std::endl;
+    std::cout << "  packing remove <item_id>            Remove an item from the packing list" << std::endl;
 }
 
 // Display version information
@@ -227,7 +257,7 @@ bool hasOption(int argc, char* argv[], const std::string& option) {
 // Check if an option is recognized by the program
 bool isKnownOption(const std::string& option) {
     static const std::vector<std::string> knownOptions = {
-        "--help", "-h", "--version", "add", "list", "view", "edit", "delete", "--name"
+        "--help", "-h", "--version", "add", "list", "view", "edit", "delete", "--name", "--qty"
     };
 
     return std::find(knownOptions.begin(), knownOptions.end(), option) != knownOptions.end();
@@ -578,4 +608,174 @@ void searchItineraries(const std::string& namePattern) {
     // Print footer
     std::cout << std::string(idColWidth + nameColWidth + 1, '-') << std::endl;
     std::cout << matchingItineraries.size() << " itinerary/ies found" << std::endl;
+}
+
+void addPackingItem(int argc, char* argv[]) {
+    // Check for required parameters
+    if (argc < 5) {
+        std::cerr << "Error: Missing required parameters for packing add command." << std::endl;
+        std::cerr << "Usage: travel_planner packing add <itinerary_id> <item_name> [--qty N]" << std::endl;
+        return;
+    }
+
+    std::string itinerary_id = argv[3];
+    std::string item_name = argv[4];
+    int quantity = 1; // Default quantity
+
+    // Check for optional --qty parameter
+    for (int i = 5; i < argc - 1 ; i++) {
+        std::string arg = argv[i];
+        if (arg == "--qty") {
+            try {
+                quantity = std::stoi(argv[i + 1]);
+                if (quantity <= 0) {
+                    std::cerr << "Error: Quantity must be a positive number." << std::endl;
+                    return;
+                }
+            }
+            catch (const std::exception&) {
+                std::cerr << "Error: Invalid quantity value." << std::endl;
+                return;
+            }
+            break;
+        }
+    }
+
+    // Create PackingManager and add the item
+    travel_planner::PackingManager packingManager("data/packing.json");
+    std::string item_id = packingManager.addItem(itinerary_id, item_name, quantity);
+
+    std::cout << "Packing item added with ID: " << item_id << std::endl;
+}
+
+void listPackingItems(int argc, char* argv[]) {
+    // Check for required parameters
+    if (argc < 4) {
+        std::cerr << "Error: Missing itinerary ID for packing list command." << std::endl;
+        std::cerr << "Usage: travel_planner packing list <itinerary_id>" << std::endl;
+        return;
+    }
+
+    std::string itinerary_id = argv[3];
+
+    // Create PackingManager and load items
+    travel_planner::PackingManager packingManager("data/packing.json");
+    std::vector<travel_planner::PackingItem> allItems = packingManager.loadAll();
+
+    // Filter items for the specified itinerary
+    std::vector<travel_planner::PackingItem> filteredItems;
+    for (const auto& item : allItems) {
+        if (item.itinerary_id == itinerary_id) {
+            filteredItems.push_back(item);
+        }
+    }
+
+    // Check if there are any items
+    if (filteredItems.empty()) {
+        std::cout << "No packing items found for itinerary ID: " << itinerary_id << std::endl;
+        return;
+    }
+
+    // Calculate column widths
+    size_t idWidth = 10; // Minimum width
+    size_t nameWidth = 20; // Minimum width
+    size_t qtyWidth = 8;   // "Quantity"
+    size_t statusWidth = 6; // "[Yes]" or "[No]"
+
+    // Find the maximum width needed for each column
+    for (const auto& item : filteredItems) {
+        idWidth = std::max(idWidth, item.id.length());
+        nameWidth = std::max(nameWidth, item.name.length());
+    }
+
+    // Add padding
+    idWidth += 2;
+    nameWidth += 2;
+
+    // Print header
+    std::cout << std::left
+        << std::setw(idWidth) << "ID"
+        << std::setw(nameWidth) << "Item"
+        << std::setw(qtyWidth) << "Quantity"
+        << "Packed" << std::endl;
+
+    // Print separator
+    std::string separator(idWidth + nameWidth + qtyWidth + statusWidth, '-');
+    std::cout << separator << std::endl;
+
+    // Print items
+    for (const auto& item : filteredItems) {
+        std::cout << std::left
+            << std::setw(idWidth) << item.id
+            << std::setw(nameWidth) << item.name
+            << std::setw(qtyWidth) << item.quantity
+            << (item.packed ? "[Yes]" : "[No]") << std::endl;
+    }
+
+    // Print summary
+    std::cout << std::endl;
+    std::cout << filteredItems.size() << " item(s) found." << std::endl;
+}
+
+void packItem(int argc, char* argv[]) {
+    // Check for required parameters
+    if (argc < 4) {
+        std::cerr << "Error: Missing item ID for packing pack command." << std::endl;
+        std::cerr << "Usage: travel_planner packing pack <item_id>" << std::endl;
+        return;
+    }
+
+    std::string item_id = argv[3];
+
+    // Create PackingManager and toggle packed status
+    travel_planner::PackingManager packingManager("data/packing.json");
+
+    // Load all items to determine current status
+    std::vector<travel_planner::PackingItem> allItems = packingManager.loadAll();
+    bool currentStatus = false;
+    bool itemFound = false;
+
+    // Find current status of the item
+    for (const auto& item : allItems) {
+        if (item.id == item_id) {
+            currentStatus = item.packed;
+            itemFound = true;
+            break;
+        }
+    }
+
+    if (!itemFound) {
+        std::cerr << "Error: No item found with ID: " << item_id << std::endl;
+        return;
+    }
+
+    // Toggle the status
+    if (packingManager.markPacked(item_id)) {
+        std::cout << "Item " << item_id << " marked as "
+            << (currentStatus ? "unpacked" : "packed") << "." << std::endl;
+    }
+    else {
+        std::cerr << "Error: Failed to update item status." << std::endl;
+    }
+}
+
+void removePackingItem(int argc, char* argv[]) {
+    // Check for required parameters
+    if (argc < 4) {
+        std::cerr << "Error: Missing item ID for packing remove command." << std::endl;
+        std::cerr << "Usage: travel_planner packing remove <item_id>" << std::endl;
+        return;
+    }
+
+    std::string item_id = argv[3];
+
+    // Create PackingManager and remove the item
+    travel_planner::PackingManager packingManager("data/packing.json");
+
+    if (packingManager.removeItem(item_id)) {
+        std::cout << "Item " << item_id << " successfully removed from packing list." << std::endl;
+    }
+    else {
+        std::cerr << "Error: No item found with ID: " << item_id << std::endl;
+    }
 }

@@ -717,3 +717,45 @@ void listPackingItems(int argc, char* argv[]) {
     std::cout << filteredItems.size() << " item(s) found." << std::endl;
 }
 
+void packItem(int argc, char* argv[]) {
+    // Check for required parameters
+    if (argc < 4) {
+        std::cerr << "Error: Missing item ID for packing pack command." << std::endl;
+        std::cerr << "Usage: travel_planner packing pack <item_id>" << std::endl;
+        return;
+    }
+
+    std::string item_id = argv[3];
+
+    // Create PackingManager and toggle packed status
+    travel_planner::PackingManager packingManager("data/packing.json");
+
+    // Load all items to determine current status
+    std::vector<travel_planner::PackingItem> allItems = packingManager.loadAll();
+    bool currentStatus = false;
+    bool itemFound = false;
+
+    // Find current status of the item
+    for (const auto& item : allItems) {
+        if (item.id == item_id) {
+            currentStatus = item.packed;
+            itemFound = true;
+            break;
+        }
+    }
+
+    if (!itemFound) {
+        std::cerr << "Error: No item found with ID: " << item_id << std::endl;
+        return;
+    }
+
+    // Toggle the status
+    if (packingManager.markPacked(item_id)) {
+        std::cout << "Item " << item_id << " marked as "
+            << (currentStatus ? "unpacked" : "packed") << "." << std::endl;
+    }
+    else {
+        std::cerr << "Error: Failed to update item status." << std::endl;
+    }
+}
+

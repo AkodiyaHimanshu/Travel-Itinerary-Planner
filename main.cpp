@@ -648,3 +648,72 @@ void addPackingItem(int argc, char* argv[]) {
     std::cout << "Packing item added with ID: " << item_id << std::endl;
 }
 
+void listPackingItems(int argc, char* argv[]) {
+    // Check for required parameters
+    if (argc < 4) {
+        std::cerr << "Error: Missing itinerary ID for packing list command." << std::endl;
+        std::cerr << "Usage: travel_planner packing list <itinerary_id>" << std::endl;
+        return;
+    }
+
+    std::string itinerary_id = argv[3];
+
+    // Create PackingManager and load items
+    travel_planner::PackingManager packingManager("data/packing.json");
+    std::vector<travel_planner::PackingItem> allItems = packingManager.loadAll();
+
+    // Filter items for the specified itinerary
+    std::vector<travel_planner::PackingItem> filteredItems;
+    for (const auto& item : allItems) {
+        if (item.itinerary_id == itinerary_id) {
+            filteredItems.push_back(item);
+        }
+    }
+
+    // Check if there are any items
+    if (filteredItems.empty()) {
+        std::cout << "No packing items found for itinerary ID: " << itinerary_id << std::endl;
+        return;
+    }
+
+    // Calculate column widths
+    size_t idWidth = 10; // Minimum width
+    size_t nameWidth = 20; // Minimum width
+    size_t qtyWidth = 8;   // "Quantity"
+    size_t statusWidth = 6; // "[Yes]" or "[No]"
+
+    // Find the maximum width needed for each column
+    for (const auto& item : filteredItems) {
+        idWidth = std::max(idWidth, item.id.length());
+        nameWidth = std::max(nameWidth, item.name.length());
+    }
+
+    // Add padding
+    idWidth += 2;
+    nameWidth += 2;
+
+    // Print header
+    std::cout << std::left
+        << std::setw(idWidth) << "ID"
+        << std::setw(nameWidth) << "Item"
+        << std::setw(qtyWidth) << "Quantity"
+        << "Packed" << std::endl;
+
+    // Print separator
+    std::string separator(idWidth + nameWidth + qtyWidth + statusWidth, '-');
+    std::cout << separator << std::endl;
+
+    // Print items
+    for (const auto& item : filteredItems) {
+        std::cout << std::left
+            << std::setw(idWidth) << item.id
+            << std::setw(nameWidth) << item.name
+            << std::setw(qtyWidth) << item.quantity
+            << (item.packed ? "[Yes]" : "[No]") << std::endl;
+    }
+
+    // Print summary
+    std::cout << std::endl;
+    std::cout << filteredItems.size() << " item(s) found." << std::endl;
+}
+

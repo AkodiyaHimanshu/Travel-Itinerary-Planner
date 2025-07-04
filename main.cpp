@@ -759,3 +759,23 @@ void packItem(int argc, char* argv[]) {
     }
 }
 
+void removePackingItem(int argc, char* argv[]) {
+    // Check for required parameters
+    if (argc < 4) {
+        std::cerr << "Error: Missing item ID for packing remove command." << std::endl;
+        std::cerr << "Usage: travel_planner packing remove <item_id>" << std::endl;
+        return;
+    }
+
+    std::string item_id = argv[3];
+
+    // Create PackingManager and remove the item
+    travel_planner::PackingManager packingManager("data/packing.json");
+
+    if (packingManager.removeItem(item_id)) {
+        std::cout << "Item " << item_id << " successfully removed from packing list." << std::endl;
+    }
+    else {
+        std::cerr << "Error: No item found with ID: " << item_id << std::endl;
+    }
+}

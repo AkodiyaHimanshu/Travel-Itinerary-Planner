@@ -183,6 +183,79 @@ $ travel_planner packing remove 1683559800-i7j8k9
 
 This section provides a comprehensive overview of the packing list functionality, with clear examples for each command and their expected outputs. The formatting follows the existing README style with bash syntax highlighting for the code blocks.
 
+## Managing Expenses
+
+The Travel Itinerary Planner allows you to track and manage expenses for your trips. Below are examples of the expense management commands.
+
+### Adding an Expense
+
+Add an expense to an itinerary with an amount and category. Date and description are optional.
+
+```bash
+$ travel_planner expense add trip-123 125.50 --category "Transportation" --date 2023-07-15 --desc "Airport taxi"
+Expense added successfully.
+```
+
+Basic usage (uses current date and empty description):
+
+```bash
+$ travel_planner expense add trip-123 45.75 --category "Food"
+Expense added successfully.
+```
+
+### Listing Expenses
+
+View all expenses for a specific itinerary:
+
+```bash
+$ travel_planner expense list trip-123
+Expenses for itinerary: trip-123
+
+ID                  Amount     Category       Date        Description
+-----------------------------------------------------------------------
+1626384059-a3b4c5   $125.50    Transportation 2023-07-15  Airport taxi
+1626384128-d5e6f7   $45.75     Food           2023-07-16
+1626384240-g7h8i9   $200.00    Accommodation  2023-07-16  Hotel
+
+Total: $371.25
+3 expense(s) found.
+```
+
+### Expense Summary by Category
+
+Get a summary of expenses grouped by category:
+
+```bash
+$ travel_planner expense summary trip-123
+Expense Summary for itinerary: trip-123
+
+Category        Amount
+-----------------------
+Accommodation   $200.00
+Food            $45.75
+Transportation  $125.50
+
+TOTAL           $371.25
+
+3 category/categories found.
+```
+
+### Removing an Expense
+
+Remove an expense using its ID:
+
+```bash
+$ travel_planner expense remove 1626384059-a3b4c5
+Expense with ID '1626384059-a3b4c5' was successfully removed.
+```
+
+If the expense ID doesn't exist:
+
+```bash
+$ travel_planner expense remove invalid-id
+Error: Failed to remove expense. Expense with ID 'invalid-id' not found.
+```
+
 
 ## License
 

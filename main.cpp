@@ -10,6 +10,8 @@ using namespace std;
 #include <algorithm>
 #include <random>
 #include <iomanip>
+#include <ctime>
+#include "src/ExpenseManager.h"
 #include "include/version.h"
 #include "include/Itinerary.h"
 #include "src/StorageManager.h"
@@ -36,6 +38,11 @@ void addPackingItem(int argc, char* argv[]);
 void listPackingItems(int argc, char* argv[]);
 void packItem(int argc, char* argv[]);
 void removePackingItem(int argc, char* argv[]);
+std::string getCurrentDate();
+void addExpense(int argc, char* argv[]);
+void listExpenses(int argc, char* argv[]);
+void summarizeExpenses(int argc, char* argv[]);
+void removeExpense(int argc, char* argv[]);
 std::string promptInput(const std::string& prompt, bool allowEmpty = false);
 
 int main(int argc, char* argv[]) {
@@ -201,6 +208,26 @@ int main(int argc, char* argv[]) {
 		return 0;
 	}
 
+    else if (argc >= 5 && std::string(argv[1]) == "expense" && std::string(argv[2]) == "add") {
+        addExpense(argc, argv);
+        return 0;
+	}
+
+    else if (argc >= 4 && std::string(argv[1]) == "expense" && std::string(argv[2]) == "list") {
+        listExpenses(argc, argv);
+        return 0;
+    }
+
+    else if (argc >= 4 && std::string(argv[1]) == "expense" && std::string(argv[2]) == "summary") {
+        summarizeExpenses(argc, argv);
+        return 0;
+	}
+
+    else if (argc >= 4 && std::string(argv[1]) == "expense" && std::string(argv[2]) == "remove") {
+        removeExpense(argc, argv);
+        return 0;
+    }
+
     // If no valid command is provided
     std::cerr << "Error: Invalid command" << std::endl;
     displayHelp();
@@ -239,6 +266,15 @@ void displayHelp() {
     std::cout << "  packing list <itinerary_id>         List all packing items for an itinerary" << std::endl;
     std::cout << "  packing pack <item_id>              Toggle packed status of an item" << std::endl;
     std::cout << "  packing remove <item_id>            Remove an item from the packing list" << std::endl;
+    std::cout << "  expense add <itinerary_id> <amount> --category <category> [--date YYYY-MM-DD] [--desc \"<description>\"]" << std::endl;
+    std::cout << "      Add a new expense for the specified itinerary" << std::endl;
+    std::cout << "  expense list <itinerary_id>" << std::endl;
+    std::cout << "      List all expenses for the specified itinerary" << std::endl;
+    std::cout << "  travel_planner expense summary <itinerary_id>" << std::endl;
+    std::cout << "      Display a summary of expenses by category for the specified itinerary" << std::endl;
+    std::cout << "  travel_planner expense remove <expense_id>" << std::endl;
+    std::cout << "      Remove an expense by its ID" << std::endl;
+
 }
 
 // Display version information
@@ -257,7 +293,8 @@ bool hasOption(int argc, char* argv[], const std::string& option) {
 // Check if an option is recognized by the program
 bool isKnownOption(const std::string& option) {
     static const std::vector<std::string> knownOptions = {
-        "--help", "-h", "--version", "add", "list", "view", "edit", "delete", "--name", "--qty"
+        "--help", "-h", "--version", "add", "list", "view", "edit", "delete", "--name", "--qty",
+        "--category", "--date", "--desc"
     };
 
     return std::find(knownOptions.begin(), knownOptions.end(), option) != knownOptions.end();
@@ -779,3 +816,78 @@ void removePackingItem(int argc, char* argv[]) {
         std::cerr << "Error: No item found with ID: " << item_id << std::endl;
     }
 }
+
+// Add this helper function to get the current date
+std::string getCurrentDate() {
+    auto now = std::chrono::system_clock::now();
+    std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+    std::tm local_tm = *std::localtime(&now_time);
+
+    std::ostringstream oss;
+    oss << std::put_time(&local_tm, "%Y-%m-%d");
+    return oss.str();
+}
+
+// Add this function to handle the expense add command
+void addExpense(int argc, char* argv[]) {
+    // Check for required parameters
+    if (argc < 5) {
+        std::cerr << "Error: Missing required parameters for expense add command." << std::endl;
+        std::cout << "Usage: " << argv[0] << " expense add <itinerary_id> <amount> --category <category> [--date YYYY-MM-DD] [--desc \"<description>\"]" << std::endl;
+        return;
+    }
+
+    std::string itinerary_id = argv[3];
+
+    // Parse the amount
+    double amount = 0.0;
+    try {
+        amount = std::stod(argv[4]);
+        if (amount <= 0) {
+            throw std::invalid_argument("Amount must be greater than zero");
+        }
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error: Invalid amount. Please provide a valid positive number." << std::endl;
+        return;
+    }
+
+    // Check for required --category parameter
+    std::string category;
+    bool hasCategory = false;
+
+    // Parse optional parameters
+    std::string date = getCurrentDate(); // Default to today
+    std::string description = ""; // Default to empty
+
+    for (int i = 5; i < argc; i++) {
+        std::string arg = argv[i];
+
+        if (arg == "--category" && i + 1 < argc) {
+            category = argv[++i];
+            hasCategory = true;
+        }
+        else if (arg == "--date" && i + 1 < argc) {
+            date = argv[++i];
+            // Basic date validation could be added here
+        }
+        else if (arg == "--desc" && i + 1 < argc) {
+            description = argv[++i];
+        }
+    }
+
+    if (!hasCategory) {
+        std::cerr << "Error: --category parameter is required." << std::endl;
+        return;
+    }
+
+    // Add the expense
+    travel_planner::ExpenseManager expenseManager("data/expenses.json");
+    if (expenseManager.addExpense(itinerary_id, amount, category, date, description)) {
+        std::cout << "Expense added successfully." << std::endl;
+    }
+    else {
+        std::cerr << "Error: Failed to add expense." << std::endl;
+    }
+}
+

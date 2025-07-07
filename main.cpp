@@ -1023,3 +1023,24 @@ void summarizeExpenses(int argc, char* argv[]) {
     std::cout << std::endl << categorySummary.size() << " category/categories found." << std::endl;
 }
 
+void removeExpense(int argc, char* argv[]) {
+    // Check for required parameters
+    if (argc < 4) {
+        std::cerr << "Error: Missing expense ID for expense remove command." << std::endl;
+        std::cout << "Usage: travel_planner expense remove <expense_id>" << std::endl;
+        return;
+    }
+
+    std::string expense_id = argv[3];
+
+    // Attempt to remove the expense
+    travel_planner::ExpenseManager expenseManager("data/expenses.json");
+    bool success = expenseManager.removeExpense(expense_id);
+
+    if (success) {
+        std::cout << "Expense with ID '" << expense_id << "' was successfully removed." << std::endl;
+    }
+    else {
+        std::cerr << "Error: Failed to remove expense. Expense with ID '" << expense_id << "' not found." << std::endl;
+    }
+}

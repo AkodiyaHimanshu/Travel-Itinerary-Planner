@@ -122,6 +122,31 @@ namespace travel_planner {
         return category_totals;
     }
 
+    bool ExpenseManager::removeExpense(const std::string& expense_id) {
+        // Load all expenses
+        std::vector<Expense> expenses = loadAll();
 
+        // Check if the list is empty
+        if (expenses.empty()) {
+            return false;  // Nothing to remove
+        }
+
+        // Find the expense to remove
+        auto it = std::find_if(expenses.begin(), expenses.end(),
+            [&expense_id](const Expense& e) {
+                return e.id == expense_id;
+            });
+
+        // Check if the expense was found
+        if (it == expenses.end()) {
+            return false;  // Expense not found
+        }
+
+        // Remove the expense
+        expenses.erase(it);
+
+        // Save the updated list
+        return saveAll(expenses);
+    }
 
 } // namespace travel_planner

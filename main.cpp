@@ -891,3 +891,79 @@ void addExpense(int argc, char* argv[]) {
     }
 }
 
+void listExpenses(int argc, char* argv[]) {
+    // Check for required parameters
+    if (argc < 4) {
+        std::cerr << "Error: Missing itinerary ID for expense list command." << std::endl;
+        std::cout << "Usage: travel_planner expense list <itinerary_id>" << std::endl;
+        return;
+    }
+
+    std::string itinerary_id = argv[3];
+
+    // Load expenses for the specified itinerary
+    travel_planner::ExpenseManager expenseManager("data/expenses.json");
+    std::vector<travel_planner::Expense> expenses = expenseManager.listExpenses(itinerary_id);
+
+    // Display the expenses
+    std::cout << "Expenses for itinerary: " << itinerary_id << std::endl;
+    std::cout << std::string(60, '-') << std::endl;
+
+    if (expenses.empty()) {
+        std::cout << "No expenses found for this itinerary." << std::endl;
+        return;
+    }
+
+    // Find column widths
+    size_t id_width = 8;  // Minimum width
+    size_t cat_width = 10;  // Minimum width
+    size_t date_width = 10;  // Fixed width for date
+    size_t desc_width = 15;  // Minimum width
+
+    for (const auto& expense : expenses) {
+        id_width = std::max(id_width, expense.id.length());
+        cat_width = std::max(cat_width, expense.category.length());
+        desc_width = std::max(desc_width, expense.description.length());
+    }
+
+    // Cap description width to avoid very long lines
+    desc_width = std::min(desc_width, size_t(30));
+
+    // Print header
+    std::cout << std::left
+        << std::setw(id_width + 2) << "ID"
+        << std::setw(12) << "Amount"
+        << std::setw(cat_width + 2) << "Category"
+        << std::setw(date_width + 2) << "Date"
+        << "Description" << std::endl;
+
+    std::cout << std::string(id_width + cat_width + date_width + desc_width + 30, '-') << std::endl;
+
+    // Print each expense
+    double total = 0.0;
+    for (const auto& expense : expenses) {
+        std::cout << std::left
+            << std::setw(id_width + 2) << expense.id
+            << "$" << std::fixed << std::setprecision(2) << std::setw(10) << expense.amount
+            << std::setw(cat_width + 2) << expense.category
+            << std::setw(date_width + 2) << expense.date;
+
+        // Handle description that might be too long
+        if (expense.description.length() > desc_width) {
+            std::cout << expense.description.substr(0, desc_width - 3) << "...";
+        }
+        else {
+            std::cout << expense.description;
+        }
+
+        std::cout << std::endl;
+
+        // Sum up the total
+        total += expense.amount;
+    }
+
+    std::cout << std::string(id_width + cat_width + date_width + desc_width + 30, '-') << std::endl;
+    std::cout << "Total: $" << std::fixed << std::setprecision(2) << total << std::endl;
+    std::cout << expenses.size() << " expense(s) found." << std::endl;
+}
+

@@ -967,3 +967,59 @@ void listExpenses(int argc, char* argv[]) {
     std::cout << expenses.size() << " expense(s) found." << std::endl;
 }
 
+void summarizeExpenses(int argc, char* argv[]) {
+    // Check for required parameters
+    if (argc < 4) {
+        std::cerr << "Error: Missing itinerary ID for expense summary command." << std::endl;
+        std::cout << "Usage: travel_planner expense summary <itinerary_id>" << std::endl;
+        return;
+    }
+
+    std::string itinerary_id = argv[3];
+
+    // Get expense summary by category
+    travel_planner::ExpenseManager expenseManager("data/expenses.json");
+    std::map<std::string, double> categorySummary = expenseManager.summary(itinerary_id);
+
+    // Display the summary
+    std::cout << "Expense Summary for itinerary: " << itinerary_id << std::endl;
+    std::cout << std::string(50, '-') << std::endl;
+
+    if (categorySummary.empty()) {
+        std::cout << "No expenses found for this itinerary." << std::endl;
+        return;
+    }
+
+    // Find maximum category name length for formatting
+    size_t categoryWidth = 10;  // Minimum width
+    for (const auto& entry : categorySummary) {
+        categoryWidth = std::max(categoryWidth, entry.first.length());
+    }
+
+    // Print header
+    std::cout << std::left
+        << std::setw(categoryWidth + 5) << "Category"
+        << "Amount" << std::endl;
+
+    std::cout << std::string(categoryWidth + 20, '-') << std::endl;
+
+    // Print each category with total
+    double overallTotal = 0.0;
+    for (const auto& entry : categorySummary) {
+        std::cout << std::left
+            << std::setw(categoryWidth + 5) << entry.first
+            << "$" << std::fixed << std::setprecision(2) << entry.second << std::endl;
+
+        // Add to overall total
+        overallTotal += entry.second;
+    }
+
+    // Print overall total
+    std::cout << std::string(categoryWidth + 20, '-') << std::endl;
+    std::cout << std::left
+        << std::setw(categoryWidth + 5) << "TOTAL"
+        << "$" << std::fixed << std::setprecision(2) << overallTotal << std::endl;
+
+    std::cout << std::endl << categorySummary.size() << " category/categories found." << std::endl;
+}
+

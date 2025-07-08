@@ -91,11 +91,11 @@ namespace travel_planner {
 
         // Write itinerary in CSV format
         outFile << "Item,Value" << std::endl;
-        outFile << "ID,\"" << it->id << "\"" << std::endl;
-        outFile << "Name,\"" << it->name << "\"" << std::endl;
-        outFile << "Start Date,\"" << it->start_date << "\"" << std::endl;
-        outFile << "End Date,\"" << it->end_date << "\"" << std::endl;
-        outFile << "Description,\"" << it->description << "\"" << std::endl;
+        outFile << "ID," << quoteField(it->id) << std::endl;
+        outFile << "Name," << quoteField(it->name) << std::endl;
+        outFile << "Start Date," << quoteField(it->start_date) << std::endl;
+        outFile << "End Date," << quoteField(it->end_date) << std::endl;
+        outFile << "Description," << quoteField(it->description) << std::endl;
 
         outFile.close();
         std::cout << "Itinerary exported to " << filepath << std::endl;
@@ -245,8 +245,8 @@ namespace travel_planner {
         outFile << "ID,Name,Quantity,Packed" << std::endl;
 
         for (const auto& item : packingItems) {
-            outFile << "\"" << item.id << "\","
-                << "\"" << item.name << "\","
+            outFile << quoteField(item.id) << ","
+                << quoteField(item.name) << ","
                 << item.quantity << ","
                 << (item.packed ? "Yes" : "No") << std::endl;
         }
@@ -371,11 +371,11 @@ namespace travel_planner {
         outFile << "ID,Date,Category,Amount,Description" << std::endl;
 
         for (const auto& expense : expenses) {
-            outFile << "\"" << expense.id << "\","
-                << "\"" << expense.date << "\","
-                << "\"" << expense.category << "\","
+            outFile << quoteField(expense.id) << ","
+                << quoteField(expense.date) << ","
+                << quoteField(expense.category) << ","
                 << std::fixed << std::setprecision(2) << expense.amount << ","
-                << "\"" << expense.description << "\"" << std::endl;
+                << quoteField(expense.description) << std::endl;
         }
 
         outFile.close();
@@ -412,6 +412,45 @@ namespace travel_planner {
         std::replace(result.begin(), result.end(), ' ', '_');
 
         return result;
+    }
+
+    std::string ExportManager::quoteField(const std::string& field) {
+        // If field is empty, return empty quotes
+        if (field.empty()) {
+            return "\"\"";
+        }
+
+        // Check if field needs quoting (contains comma, quote, or newline)
+        bool needsQuoting = false;
+        bool hasQuotes = false;
+
+        for (char c : field) {
+            if (c == ',' || c == '\n' || c == '\r') {
+                needsQuoting = true;
+            }
+            else if (c == '"') {
+                needsQuoting = true;
+                hasQuotes = true;
+            }
+        }
+
+        // If no special handling needed, return as is
+        if (!needsQuoting && !hasQuotes) {
+            return field;
+        }
+
+        // If it has quotes, we need to double them
+        std::string result = field;
+        if (hasQuotes) {
+            std::string::size_type pos = 0;
+            while ((pos = result.find('"', pos)) != std::string::npos) {
+                result.replace(pos, 1, "\"\"");
+                pos += 2;  // Skip the two quotes we just inserted
+            }
+        }
+
+        // Wrap in quotes
+        return "\"" + result + "\"";
     }
 
 } // namespace travel_planner

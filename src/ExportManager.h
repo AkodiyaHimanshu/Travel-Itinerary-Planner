@@ -31,6 +31,7 @@ namespace travel_planner {
         // Helper methods
         bool createDirectoryIfNeeded(const std::string& path);
         std::string getSafeFilename(const std::string& filename);
+        std::string quoteField(const std::string& field);
     };
 
 } // namespace travel_planner

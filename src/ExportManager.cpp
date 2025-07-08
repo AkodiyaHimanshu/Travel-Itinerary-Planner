@@ -1,4 +1,5 @@
 #include "ExportManager.h"
+#include "PackingManager.h"
 #include <iostream>
 #include <filesystem>
 #include <iomanip>
@@ -102,8 +103,7 @@ namespace travel_planner {
     }
 
     bool ExportManager::exportPackingMarkdown(const std::string& itin_id, const std::string& path) {
-        // For this implementation, assume there's a function to get packing items
-        // Using StorageManager to first find the itinerary to get its name
+        // Find the itinerary by ID (for name)
         StorageManager storageManager("data/itineraries.json");
         auto itineraries = storageManager.loadAll();
 
@@ -115,20 +115,17 @@ namespace travel_planner {
             return false;
         }
 
-        // TODO: Replace with actual packing list fetching
-        // This is a placeholder - in a real implementation, you'd fetch from a PackingManager
-        struct PackingItem {
-            std::string name;
-            int quantity;
-            bool packed;
-            std::string category;
-        };
+        // Get packing items for the itinerary
+        PackingManager packingManager;
+        auto allItems = packingManager.loadAll();
 
-        std::vector<PackingItem> packingItems = {
-            {"Passport", 1, true, "Documents"},
-            {"T-shirts", 5, false, "Clothing"},
-            {"Toothbrush", 1, false, "Toiletries"}
-        };
+        // Filter items for the specific itinerary
+        std::vector<PackingItem> packingItems;
+        for (const auto& item : allItems) {
+            if (item.itinerary_id == itin_id) {
+                packingItems.push_back(item);
+            }
+        }
 
         // Create export directory if needed
         std::string exportDir = path.empty() ? "exports" : path;
@@ -149,20 +146,53 @@ namespace travel_planner {
         // Write packing list in Markdown format
         outFile << "# Packing List for " << it->name << std::endl << std::endl;
 
-        // Group items by category
-        std::map<std::string, std::vector<PackingItem>> categorizedItems;
-        for (const auto& item : packingItems) {
-            categorizedItems[item.category].push_back(item);
+        if (packingItems.empty()) {
+            outFile << "No packing items found for this itinerary." << std::endl;
         }
+        else {
+            // Separate packed and unpacked items
+            std::vector<PackingItem> packedItems;
+            std::vector<PackingItem> unpackedItems;
 
-        for (const auto& [category, items] : categorizedItems) {
-            outFile << "## " << category << std::endl << std::endl;
-
-            for (const auto& item : items) {
-                outFile << "- [" << (item.packed ? "x" : " ") << "] "
-                    << item.quantity << "x " << item.name << std::endl;
+            for (const auto& item : packingItems) {
+                if (item.packed) {
+                    packedItems.push_back(item);
+                }
+                else {
+                    unpackedItems.push_back(item);
+                }
             }
-            outFile << std::endl;
+
+            // Display unpacked items first
+            outFile << "## Unpacked Items" << std::endl << std::endl;
+            if (unpackedItems.empty()) {
+                outFile << "All items have been packed!" << std::endl << std::endl;
+            }
+            else {
+                for (const auto& item : unpackedItems) {
+                    outFile << "- [ ] " << item.quantity << "x " << item.name << " (ID: " << item.id << ")" << std::endl;
+                }
+                outFile << std::endl;
+            }
+
+            // Display packed items
+            outFile << "## Packed Items" << std::endl << std::endl;
+            if (packedItems.empty()) {
+                outFile << "No items have been packed yet." << std::endl << std::endl;
+            }
+            else {
+                for (const auto& item : packedItems) {
+                    outFile << "- [x] " << item.quantity << "x " << item.name << " (ID: " << item.id << ")" << std::endl;
+                }
+                outFile << std::endl;
+            }
+
+            // Summary
+            outFile << "## Summary" << std::endl << std::endl;
+            outFile << "**Total Items:** " << packingItems.size() << std::endl;
+            outFile << "**Packed:** " << packedItems.size() << std::endl;
+            outFile << "**Unpacked:** " << unpackedItems.size() << std::endl;
+            outFile << "**Progress:** " << (packingItems.empty() ? 0 : (packedItems.size() * 100 / packingItems.size())) << "%" << std::endl;
         }
 
         outFile.close();
@@ -171,8 +201,7 @@ namespace travel_planner {
     }
 
     bool ExportManager::exportPackingCSV(const std::string& itin_id, const std::string& path) {
-        // For this implementation, assume there's a function to get packing items
-        // Using StorageManager to first find the itinerary to get its name
+        // Find the itinerary by ID (for name)
         StorageManager storageManager("data/itineraries.json");
         auto itineraries = storageManager.loadAll();
 
@@ -184,20 +213,17 @@ namespace travel_planner {
             return false;
         }
 
-        // TODO: Replace with actual packing list fetching
-        // This is a placeholder - in a real implementation, you'd fetch from a PackingManager
-        struct PackingItem {
-            std::string name;
-            int quantity;
-            bool packed;
-            std::string category;
-        };
+        // Get packing items for the itinerary
+        PackingManager packingManager;
+        auto allItems = packingManager.loadAll();
 
-        std::vector<PackingItem> packingItems = {
-            {"Passport", 1, true, "Documents"},
-            {"T-shirts", 5, false, "Clothing"},
-            {"Toothbrush", 1, false, "Toiletries"}
-        };
+        // Filter items for the specific itinerary
+        std::vector<PackingItem> packingItems;
+        for (const auto& item : allItems) {
+            if (item.itinerary_id == itin_id) {
+                packingItems.push_back(item);
+            }
+        }
 
         // Create export directory if needed
         std::string exportDir = path.empty() ? "exports" : path;
@@ -216,13 +242,13 @@ namespace travel_planner {
         }
 
         // Write packing list in CSV format
-        outFile << "Item,Quantity,Packed,Category" << std::endl;
+        outFile << "ID,Name,Quantity,Packed" << std::endl;
 
         for (const auto& item : packingItems) {
-            outFile << "\"" << item.name << "\","
+            outFile << "\"" << item.id << "\","
+                << "\"" << item.name << "\","
                 << item.quantity << ","
-                << (item.packed ? "Yes" : "No") << ","
-                << "\"" << item.category << "\"" << std::endl;
+                << (item.packed ? "Yes" : "No") << std::endl;
         }
 
         outFile.close();

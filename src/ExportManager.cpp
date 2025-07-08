@@ -1,0 +1,391 @@
+#include "ExportManager.h"
+#include <iostream>
+#include <filesystem>
+#include <iomanip>
+#include <sstream>
+#include <algorithm>
+
+namespace fs = std::filesystem;
+namespace travel_planner {
+
+    ExportManager::ExportManager() {
+        // Ensure the exports directory exists
+        createDirectoryIfNeeded("exports");
+    }
+
+    ExportManager::~ExportManager() {
+        // Cleanup if needed
+    }
+
+    bool ExportManager::exportItineraryMarkdown(const std::string& id, const std::string& path) {
+        // Find the itinerary by ID
+        StorageManager storageManager("data/itineraries.json");
+        auto itineraries = storageManager.loadAll();
+
+        auto it = std::find_if(itineraries.begin(), itineraries.end(),
+            [&id](const Itinerary& itin) { return itin.id == id; });
+
+        if (it == itineraries.end()) {
+            std::cerr << "Itinerary with ID '" << id << "' not found." << std::endl;
+            return false;
+        }
+
+        // Create export directory if needed
+        std::string exportDir = path.empty() ? "exports" : path;
+        if (!createDirectoryIfNeeded(exportDir)) {
+            return false;
+        }
+
+        // Open output file
+        std::string filename = getSafeFilename(it->name) + "_itinerary.md";
+        std::string filepath = exportDir + "/" + filename;
+
+        std::ofstream outFile(filepath);
+        if (!outFile) {
+            std::cerr << "Failed to create output file: " << filepath << std::endl;
+            return false;
+        }
+
+        // Write itinerary in Markdown format
+        outFile << "# " << it->name << std::endl << std::endl;
+        outFile << "**Itinerary ID:** " << it->id << std::endl;
+        outFile << "**Start Date:** " << it->start_date << std::endl;
+        outFile << "**End Date:** " << it->end_date << std::endl << std::endl;
+        outFile << "## Description" << std::endl << std::endl;
+        outFile << it->description << std::endl;
+
+        outFile.close();
+        std::cout << "Itinerary exported to " << filepath << std::endl;
+        return true;
+    }
+
+    bool ExportManager::exportItineraryCSV(const std::string& id, const std::string& path) {
+        // Find the itinerary by ID
+        StorageManager storageManager("data/itineraries.json");
+        auto itineraries = storageManager.loadAll();
+
+        auto it = std::find_if(itineraries.begin(), itineraries.end(),
+            [&id](const Itinerary& itin) { return itin.id == id; });
+
+        if (it == itineraries.end()) {
+            std::cerr << "Itinerary with ID '" << id << "' not found." << std::endl;
+            return false;
+        }
+
+        // Create export directory if needed
+        std::string exportDir = path.empty() ? "exports" : path;
+        if (!createDirectoryIfNeeded(exportDir)) {
+            return false;
+        }
+
+        // Open output file
+        std::string filename = getSafeFilename(it->name) + "_itinerary.csv";
+        std::string filepath = exportDir + "/" + filename;
+
+        std::ofstream outFile(filepath);
+        if (!outFile) {
+            std::cerr << "Failed to create output file: " << filepath << std::endl;
+            return false;
+        }
+
+        // Write itinerary in CSV format
+        outFile << "Item,Value" << std::endl;
+        outFile << "ID,\"" << it->id << "\"" << std::endl;
+        outFile << "Name,\"" << it->name << "\"" << std::endl;
+        outFile << "Start Date,\"" << it->start_date << "\"" << std::endl;
+        outFile << "End Date,\"" << it->end_date << "\"" << std::endl;
+        outFile << "Description,\"" << it->description << "\"" << std::endl;
+
+        outFile.close();
+        std::cout << "Itinerary exported to " << filepath << std::endl;
+        return true;
+    }
+
+    bool ExportManager::exportPackingMarkdown(const std::string& itin_id, const std::string& path) {
+        // For this implementation, assume there's a function to get packing items
+        // Using StorageManager to first find the itinerary to get its name
+        StorageManager storageManager("data/itineraries.json");
+        auto itineraries = storageManager.loadAll();
+
+        auto it = std::find_if(itineraries.begin(), itineraries.end(),
+            [&itin_id](const Itinerary& itin) { return itin.id == itin_id; });
+
+        if (it == itineraries.end()) {
+            std::cerr << "Itinerary with ID '" << itin_id << "' not found." << std::endl;
+            return false;
+        }
+
+        // TODO: Replace with actual packing list fetching
+        // This is a placeholder - in a real implementation, you'd fetch from a PackingManager
+        struct PackingItem {
+            std::string name;
+            int quantity;
+            bool packed;
+            std::string category;
+        };
+
+        std::vector<PackingItem> packingItems = {
+            {"Passport", 1, true, "Documents"},
+            {"T-shirts", 5, false, "Clothing"},
+            {"Toothbrush", 1, false, "Toiletries"}
+        };
+
+        // Create export directory if needed
+        std::string exportDir = path.empty() ? "exports" : path;
+        if (!createDirectoryIfNeeded(exportDir)) {
+            return false;
+        }
+
+        // Open output file
+        std::string filename = getSafeFilename(it->name) + "_packing.md";
+        std::string filepath = exportDir + "/" + filename;
+
+        std::ofstream outFile(filepath);
+        if (!outFile) {
+            std::cerr << "Failed to create output file: " << filepath << std::endl;
+            return false;
+        }
+
+        // Write packing list in Markdown format
+        outFile << "# Packing List for " << it->name << std::endl << std::endl;
+
+        // Group items by category
+        std::map<std::string, std::vector<PackingItem>> categorizedItems;
+        for (const auto& item : packingItems) {
+            categorizedItems[item.category].push_back(item);
+        }
+
+        for (const auto& [category, items] : categorizedItems) {
+            outFile << "## " << category << std::endl << std::endl;
+
+            for (const auto& item : items) {
+                outFile << "- [" << (item.packed ? "x" : " ") << "] "
+                    << item.quantity << "x " << item.name << std::endl;
+            }
+            outFile << std::endl;
+        }
+
+        outFile.close();
+        std::cout << "Packing list exported to " << filepath << std::endl;
+        return true;
+    }
+
+    bool ExportManager::exportPackingCSV(const std::string& itin_id, const std::string& path) {
+        // For this implementation, assume there's a function to get packing items
+        // Using StorageManager to first find the itinerary to get its name
+        StorageManager storageManager("data/itineraries.json");
+        auto itineraries = storageManager.loadAll();
+
+        auto it = std::find_if(itineraries.begin(), itineraries.end(),
+            [&itin_id](const Itinerary& itin) { return itin.id == itin_id; });
+
+        if (it == itineraries.end()) {
+            std::cerr << "Itinerary with ID '" << itin_id << "' not found." << std::endl;
+            return false;
+        }
+
+        // TODO: Replace with actual packing list fetching
+        // This is a placeholder - in a real implementation, you'd fetch from a PackingManager
+        struct PackingItem {
+            std::string name;
+            int quantity;
+            bool packed;
+            std::string category;
+        };
+
+        std::vector<PackingItem> packingItems = {
+            {"Passport", 1, true, "Documents"},
+            {"T-shirts", 5, false, "Clothing"},
+            {"Toothbrush", 1, false, "Toiletries"}
+        };
+
+        // Create export directory if needed
+        std::string exportDir = path.empty() ? "exports" : path;
+        if (!createDirectoryIfNeeded(exportDir)) {
+            return false;
+        }
+
+        // Open output file
+        std::string filename = getSafeFilename(it->name) + "_packing.csv";
+        std::string filepath = exportDir + "/" + filename;
+
+        std::ofstream outFile(filepath);
+        if (!outFile) {
+            std::cerr << "Failed to create output file: " << filepath << std::endl;
+            return false;
+        }
+
+        // Write packing list in CSV format
+        outFile << "Item,Quantity,Packed,Category" << std::endl;
+
+        for (const auto& item : packingItems) {
+            outFile << "\"" << item.name << "\","
+                << item.quantity << ","
+                << (item.packed ? "Yes" : "No") << ","
+                << "\"" << item.category << "\"" << std::endl;
+        }
+
+        outFile.close();
+        std::cout << "Packing list exported to " << filepath << std::endl;
+        return true;
+    }
+
+    bool ExportManager::exportExpenseMarkdown(const std::string& itin_id, const std::string& path) {
+        // Find the itinerary by ID
+        StorageManager storageManager("data/itineraries.json");
+        auto itineraries = storageManager.loadAll();
+
+        auto it = std::find_if(itineraries.begin(), itineraries.end(),
+            [&itin_id](const Itinerary& itin) { return itin.id == itin_id; });
+
+        if (it == itineraries.end()) {
+            std::cerr << "Itinerary with ID '" << itin_id << "' not found." << std::endl;
+            return false;
+        }
+
+        // Get expenses
+        ExpenseManager expenseManager;
+        auto expenses = expenseManager.listExpenses(itin_id);
+
+        // Create export directory if needed
+        std::string exportDir = path.empty() ? "exports" : path;
+        if (!createDirectoryIfNeeded(exportDir)) {
+            return false;
+        }
+
+        // Open output file
+        std::string filename = getSafeFilename(it->name) + "_expenses.md";
+        std::string filepath = exportDir + "/" + filename;
+
+        std::ofstream outFile(filepath);
+        if (!outFile) {
+            std::cerr << "Failed to create output file: " << filepath << std::endl;
+            return false;
+        }
+
+        // Write expenses in Markdown format
+        outFile << "# Expenses for " << it->name << std::endl << std::endl;
+
+        if (expenses.empty()) {
+            outFile << "No expenses recorded for this itinerary." << std::endl;
+        }
+        else {
+            // Group expenses by category
+            std::map<std::string, std::vector<Expense>> categorizedExpenses;
+            double totalAmount = 0.0;
+
+            for (const auto& expense : expenses) {
+                categorizedExpenses[expense.category].push_back(expense);
+                totalAmount += expense.amount;
+            }
+
+            for (const auto& [category, catExpenses] : categorizedExpenses) {
+                double categoryTotal = 0.0;
+                for (const auto& expense : catExpenses) {
+                    categoryTotal += expense.amount;
+                }
+
+                outFile << "## " << category << " ($" << std::fixed << std::setprecision(2) << categoryTotal << ")" << std::endl << std::endl;
+
+                outFile << "| Date | Description | Amount |" << std::endl;
+                outFile << "|------|-------------|--------|" << std::endl;
+
+                for (const auto& expense : catExpenses) {
+                    outFile << "| " << expense.date << " | " << expense.description
+                        << " | $" << std::fixed << std::setprecision(2) << expense.amount << " |" << std::endl;
+                }
+
+                outFile << std::endl;
+            }
+
+            outFile << "## Summary" << std::endl << std::endl;
+            outFile << "**Total Expenses:** $" << std::fixed << std::setprecision(2) << totalAmount << std::endl;
+            outFile << "**Number of Expenses:** " << expenses.size() << std::endl;
+        }
+
+        outFile.close();
+        std::cout << "Expenses exported to " << filepath << std::endl;
+        return true;
+    }
+
+    bool ExportManager::exportExpenseCSV(const std::string& itin_id, const std::string& path) {
+        // Find the itinerary by ID
+        StorageManager storageManager("data/itineraries.json");
+        auto itineraries = storageManager.loadAll();
+
+        auto it = std::find_if(itineraries.begin(), itineraries.end(),
+            [&itin_id](const Itinerary& itin) { return itin.id == itin_id; });
+
+        if (it == itineraries.end()) {
+            std::cerr << "Itinerary with ID '" << itin_id << "' not found." << std::endl;
+            return false;
+        }
+
+        // Get expenses
+        ExpenseManager expenseManager;
+        auto expenses = expenseManager.listExpenses(itin_id);
+
+        // Create export directory if needed
+        std::string exportDir = path.empty() ? "exports" : path;
+        if (!createDirectoryIfNeeded(exportDir)) {
+            return false;
+        }
+
+        // Open output file
+        std::string filename = getSafeFilename(it->name) + "_expenses.csv";
+        std::string filepath = exportDir + "/" + filename;
+
+        std::ofstream outFile(filepath);
+        if (!outFile) {
+            std::cerr << "Failed to create output file: " << filepath << std::endl;
+            return false;
+        }
+
+        // Write expenses in CSV format
+        outFile << "ID,Date,Category,Amount,Description" << std::endl;
+
+        for (const auto& expense : expenses) {
+            outFile << "\"" << expense.id << "\","
+                << "\"" << expense.date << "\","
+                << "\"" << expense.category << "\","
+                << std::fixed << std::setprecision(2) << expense.amount << ","
+                << "\"" << expense.description << "\"" << std::endl;
+        }
+
+        outFile.close();
+        std::cout << "Expenses exported to " << filepath << std::endl;
+        return true;
+    }
+
+    bool ExportManager::createDirectoryIfNeeded(const std::string& path) {
+        try {
+            if (!fs::exists(path)) {
+                if (!fs::create_directories(path)) {
+                    std::cerr << "Failed to create directory: " << path << std::endl;
+                    return false;
+                }
+            }
+            return true;
+        }
+        catch (const fs::filesystem_error& e) {
+            std::cerr << "Filesystem error: " << e.what() << std::endl;
+            return false;
+        }
+    }
+
+    std::string ExportManager::getSafeFilename(const std::string& filename) {
+        std::string result = filename;
+
+        // Replace invalid filename characters with underscores
+        const std::string invalidChars = "\\/:*?\"<>|";
+        for (char c : invalidChars) {
+            std::replace(result.begin(), result.end(), c, '_');
+        }
+
+        // Replace spaces with underscores for better file paths
+        std::replace(result.begin(), result.end(), ' ', '_');
+
+        return result;
+    }
+
+} // namespace travel_planner

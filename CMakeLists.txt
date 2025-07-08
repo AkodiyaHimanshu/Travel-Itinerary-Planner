@@ -16,7 +16,7 @@ endif()
 project ("Travel Itinerary Planner")
 
 # Add source to this project's executable.
-add_executable (CMakeTarget "main.cpp" "main.h" "include/version.h" "include/Itinerary.h" "src/StorageManager.h" "src/StorageManager.cpp" "include/PackingItem.h" "src/PackingManager.h" "src/PackingManager.cpp" "include/Expense.h" "src/ExpenseManager.h" "src/ExpenseManager.cpp")
+add_executable (CMakeTarget "main.cpp" "main.h" "include/version.h" "include/Itinerary.h" "src/StorageManager.h" "src/StorageManager.cpp" "include/PackingItem.h" "src/PackingManager.h" "src/PackingManager.cpp" "include/Expense.h" "src/ExpenseManager.h" "src/ExpenseManager.cpp" "src/ExportManager.h" "src/ExportManager.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET CMakeTarget PROPERTY CXX_STANDARD 20)

@@ -46,6 +46,7 @@ void summarizeExpenses(int argc, char* argv[]);
 void removeExpense(int argc, char* argv[]);
 void exportItinerary(const std::vector<std::string>& args);
 void exportPacking(const std::vector<std::string>& args);
+void exportExpense(const std::vector<std::string>& args);
 std::string promptInput(const std::string& prompt, bool allowEmpty = false);
 
 int main(int argc, char* argv[]) {
@@ -241,7 +242,13 @@ int main(int argc, char* argv[]) {
         std::vector<std::string> args(argv + 1, argv + argc);
         exportPacking(args);
         return 0;
-        }
+    }
+
+    else if (argc >= 4 && std::string(argv[1]) == "export" && std::string(argv[2]) == "expense") {
+        std::vector<std::string> args(argv + 1, argv + argc);
+        exportExpense(args);
+        return 0;
+    }
 
     // If no valid command is provided
     std::cerr << "Error: Invalid command" << std::endl;
@@ -291,6 +298,7 @@ void displayHelp() {
     std::cout << "      Remove an expense by its ID" << std::endl;
     std::cout << "  export itinerary <id> [--format md|csv] Export an itinerary in Markdown (default) or CSV format" << std::endl;
     std::cout << "  export packing <id> [--format md|csv]  Export a packing list to a file (default: Markdown)" << std::endl;
+    std::cout << "  export expense <id> [--format md|csv]   Export expenses to a file (default: Markdown)" << std::endl;
 
 }
 
@@ -1062,23 +1070,25 @@ void removeExpense(int argc, char* argv[]) {
     }
 }
 
+
+
+// Simplified exportItinerary function
 void exportItinerary(const std::vector<std::string>& args) {
     if (args.size() < 3) {
-        std::cerr << "Error: Missing itinerary ID." << std::endl;
+        std::cerr << "Error: Missing itinerary ID for export" << std::endl;
         std::cout << "Usage: travel_planner export itinerary <id> [--format md|csv]" << std::endl;
         return;
     }
 
-    std::string id = args[2];
-    std::string format = "md"; // Default format is Markdown
+    std::string itineraryId = args[2];
+    std::string format = "md"; // Default to markdown
 
     // Check for format flag
     for (size_t i = 3; i < args.size(); i++) {
         if (args[i] == "--format" && i + 1 < args.size()) {
             format = args[i + 1];
             if (format != "md" && format != "csv") {
-                std::cerr << "Error: Invalid format. Supported formats are 'md' and 'csv'." << std::endl;
-                std::cout << "Usage: travel_planner export itinerary <id> [--format md|csv]" << std::endl;
+                std::cerr << "Error: Invalid format specified. Use 'md' or 'csv'." << std::endl;
                 return;
             }
             break;
@@ -1086,22 +1096,29 @@ void exportItinerary(const std::vector<std::string>& args) {
     }
 
     travel_planner::ExportManager exportManager;
-    bool success = false;
+    bool success = doExport(
+        "itinerary",
+        itineraryId,
+        format,
+        [&exportManager](const std::string& id, const std::string& path) {
+            return exportManager.exportItineraryMarkdown(id, path);
+        },
+        [&exportManager](const std::string& id, const std::string& path) {
+            return exportManager.exportItineraryCSV(id, path);
+        }
+    );
 
-    if (format == "md") {
-        success = exportManager.exportItineraryMarkdown(id, "exports");
+    if (success) {
+        std::cout << "Itinerary " << itineraryId << " exported successfully as "
+            << format << " format." << std::endl;
     }
     else {
-        success = exportManager.exportItineraryCSV(id, "exports");
-    }
-
-    if (!success) {
-        std::cerr << "Failed to export itinerary." << std::endl;
+        std::cerr << "Error: Failed to export itinerary. Please check if the itinerary exists." << std::endl;
     }
 }
 
+// Simplified exportPacking function
 void exportPacking(const std::vector<std::string>& args) {
-    // Check if itinerary ID is provided
     if (args.size() < 3) {
         std::cerr << "Error: Missing itinerary ID for packing list export" << std::endl;
         std::cout << "Usage: travel_planner export packing <itinerary_id> [--format md|csv]" << std::endl;
@@ -1124,14 +1141,17 @@ void exportPacking(const std::vector<std::string>& args) {
     }
 
     travel_planner::ExportManager exportManager;
-    bool success = false;
-
-    if (format == "md") {
-        success = exportManager.exportPackingMarkdown(itineraryId, "exports/packing_" + itineraryId + ".md");
-    }
-    else {
-        success = exportManager.exportPackingCSV(itineraryId, "exports/packing_" + itineraryId + ".csv");
-    }
+    bool success = doExport(
+        "packing",
+        itineraryId,
+        format,
+        [&exportManager](const std::string& id, const std::string& path) {
+            return exportManager.exportPackingMarkdown(id, path);
+        },
+        [&exportManager](const std::string& id, const std::string& path) {
+            return exportManager.exportPackingCSV(id, path);
+        }
+    );
 
     if (success) {
         std::cout << "Packing list for itinerary " << itineraryId << " exported successfully as "
@@ -1139,5 +1159,50 @@ void exportPacking(const std::vector<std::string>& args) {
     }
     else {
         std::cerr << "Error: Failed to export packing list. Please check if the itinerary exists." << std::endl;
+    }
+}
+
+// Simplified exportExpense function
+void exportExpense(const std::vector<std::string>& args) {
+    if (args.size() < 3) {
+        std::cerr << "Error: Missing itinerary ID for expense export" << std::endl;
+        std::cout << "Usage: travel_planner export expense <itinerary_id> [--format md|csv]" << std::endl;
+        return;
+    }
+
+    std::string itineraryId = args[2];
+    std::string format = "md"; // Default to markdown
+
+    // Check for format flag
+    for (size_t i = 3; i < args.size(); i++) {
+        if (args[i] == "--format" && i + 1 < args.size()) {
+            format = args[i + 1];
+            if (format != "md" && format != "csv") {
+                std::cerr << "Error: Invalid format specified. Use 'md' or 'csv'." << std::endl;
+                return;
+            }
+            break;
+        }
+    }
+
+    travel_planner::ExportManager exportManager;
+    bool success = doExport(
+        "expenses",
+        itineraryId,
+        format,
+        [&exportManager](const std::string& id, const std::string& path) {
+            return exportManager.exportExpenseMarkdown(id, path);
+        },
+        [&exportManager](const std::string& id, const std::string& path) {
+            return exportManager.exportExpenseCSV(id, path);
+        }
+    );
+
+    if (success) {
+        std::cout << "Expenses for itinerary " << itineraryId << " exported successfully as "
+            << format << " format." << std::endl;
+    }
+    else {
+        std::cerr << "Error: Failed to export expenses. Please check if the itinerary exists." << std::endl;
     }
 }

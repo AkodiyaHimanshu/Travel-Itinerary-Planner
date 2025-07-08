@@ -256,6 +256,111 @@ $ travel_planner expense remove invalid-id
 Error: Failed to remove expense. Expense with ID 'invalid-id' not found.
 ```
 
+## Exporting Data
+
+The Travel Itinerary Planner allows you to export your data in different formats for sharing, printing, or analysis purposes.
+
+### Export Commands
+
+All export commands follow the same pattern:
+```
+travel_planner export <type> <itinerary_id> [--format <format>]
+```
+
+Where:
+- `<type>` is one of: `itinerary`, `packing`, or `expense`
+- `<itinerary_id>` is the ID of the itinerary to export
+- `<format>` is either `md` (Markdown) or `csv` (Comma Separated Values)
+
+If no format is specified, Markdown (md) is used by default.
+
+### Export Itineraries
+
+Export an itinerary's details to a file:
+```
+travel_planner export itinerary ABC123 --format md
+```
+
+**Sample Markdown output:**
+```
+Itinerary: Summer Vacation in Europe
+ID: ABC123
+Start Date: 2023-06-15
+End Date: 2023-06-30
+Description: A two-week tour of major European cities including Paris, Rome, and Barcelona.
+Created on: June 1, 2023
+```
+
+**Sample CSV output:**
+```
+ID,Name,Start Date,End Date,Description
+ABC123,Summer Vacation in Europe,2023-06-15,2023-06-30,"A two-week tour of major European cities including Paris, Rome, and Barcelona."
+```
+
+### Export Packing Lists
+
+Export a packing list for a specific itinerary:
+```
+travel_planner export packing ABC123 --format md
+```
+
+**Sample Markdown output:**
+```
+Packing List for: Summer Vacation in Europe
+Packed Items
+ Passport
+ Travel Insurance Documents
+ Phone Charger
+Unpacked Items
+ Sunscreen
+ Beach Towel
+ Swimsuit
+```
+
+**Sample CSV output:**
+```
+ID,Name,Packed,Category,Quantity,Itinerary ID
+PKI001,Passport,true,Documents,1,ABC123
+PKI002,Travel Insurance Documents,true,Documents,1,ABC123
+PKI003,Phone Charger,true,Electronics,1,ABC123
+PKI004,Sunscreen,false,Toiletries,1,ABC123
+PKI005,Beach Towel,false,Clothing,1,ABC123
+PKI006,Swimsuit,false,Clothing,1,ABC123
+```
+
+### Export Expenses
+
+Export expenses for a specific itinerary:
+```
+travel_planner export expense ABC123 --format md
+```
+
+**Sample Markdown output:**
+```
+Expenses for: Summer Vacation in Europe
+Date	Category	Description	Amount
+2023-06-15	Transportation	Flight to Paris	$450.00
+2023-06-16	Accommodation	Hotel in Paris	$180.00
+2023-06-17	Food	Dinner at Le Bistro	$65.75
+Total: $695.75
+```
+
+**Sample CSV output:**
+```
+ID,Date,Category,Description,Amount,Itinerary ID
+EXP001,2023-06-15,Transportation,Flight to Paris,450.00,ABC123
+EXP002,2023-06-16,Accommodation,Hotel in Paris,180.00,ABC123
+EXP003,2023-06-17,Food,Dinner at Le Bistro,65.75,ABC123
+```
+
+### Export File Location
+
+All exported files are saved in the `exports/` directory with filenames based on the export type and itinerary ID:
+
+- Itineraries: `exports/itinerary_<id>.[md|csv]`
+- Packing Lists: `exports/packing_<id>.[md|csv]`
+- Expenses: `exports/expenses_<id>.[md|csv]`
+
 
 ## License
 

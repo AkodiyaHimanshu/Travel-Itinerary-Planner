@@ -1070,7 +1070,23 @@ void removeExpense(int argc, char* argv[]) {
     }
 }
 
+// Helper function to handle common export operations
+bool doExport(const std::string& what,
+    const std::string& id,
+    const std::string& format,
+    std::function<bool(const std::string&, const std::string&)> mdFn,
+    std::function<bool(const std::string&, const std::string&)> csvFn) {
 
+    travel_planner::ExportManager exportManager;
+    std::string path = "exports/" + what + "_" + id + "." + format;
+
+    if (format == "md") {
+        return mdFn(id, path);
+    }
+    else {
+        return csvFn(id, path);
+    }
+}
 
 // Simplified exportItinerary function
 void exportItinerary(const std::vector<std::string>& args) {

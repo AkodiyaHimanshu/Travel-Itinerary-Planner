@@ -1273,4 +1273,50 @@ void unfavoriteItinerary(const std::string& id) {
     storageManager.saveAll(itineraries);
     std::cout << "Favorite status removed from itinerary '" << it->name << "'." << std::endl;
 }
+void listFavoriteItineraries() {
+    travel_planner::StorageManager storageManager("data/itineraries.json");
+    std::vector<travel_planner::Itinerary> allItineraries = storageManager.loadAll();
+
+    // Filter for favorite itineraries only
+    std::vector<travel_planner::Itinerary> favoriteItineraries;
+    std::copy_if(allItineraries.begin(), allItineraries.end(),
+        std::back_inserter(favoriteItineraries),
+        [](const travel_planner::Itinerary& itin) { return itin.is_favorite; });
+
+    if (favoriteItineraries.empty()) {
+        std::cout << "No favorite itineraries found." << std::endl;
+        return;
+    }
+
+    // Find the longest ID and name for formatting
+    size_t maxIdLength = 2; // "ID" header length
+    size_t maxNameLength = 4; // "Name" header length
+
+    for (const auto& itinerary : favoriteItineraries) {
+        maxIdLength = std::max(maxIdLength, itinerary.id.length());
+        maxNameLength = std::max(maxNameLength, itinerary.name.length());
+    }
+
+    // Add some padding
+    maxIdLength += 2;
+    maxNameLength += 2;
+
+    // Print headers
+    std::cout << std::left << std::setw(maxIdLength) << "ID"
+        << std::setw(maxNameLength) << "Name" << std::endl;
+
+    // Print separator line
+    std::cout << std::string(maxIdLength + maxNameLength, '-') << std::endl;
+
+    // Print itineraries
+    for (const auto& itinerary : favoriteItineraries) {
+        std::cout << std::left << std::setw(maxIdLength) << itinerary.id
+            << std::setw(maxNameLength) << itinerary.name << std::endl;
+    }
+
+    // Print count
+    std::cout << std::endl << favoriteItineraries.size()
+        << " favorite " << (favoriteItineraries.size() == 1 ? "itinerary" : "itineraries")
+        << " found." << std::endl;
+}
 }

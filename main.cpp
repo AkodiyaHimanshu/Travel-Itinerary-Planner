@@ -47,6 +47,10 @@ void removeExpense(int argc, char* argv[]);
 void exportItinerary(const std::vector<std::string>& args);
 void exportPacking(const std::vector<std::string>& args);
 void exportExpense(const std::vector<std::string>& args);
+void favoriteItinerary(const std::string& id);
+void unfavoriteItinerary(const std::string& id);
+void listFavoriteItineraries();
+void searchItinerariesByKeyword(const std::string& keyword);
 std::string promptInput(const std::string& prompt, bool allowEmpty = false);
 
 int main(int argc, char* argv[]) {
@@ -250,6 +254,61 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    else if (argc >= 3 && std::string(argv[1]) == "itinerary" && std::string(argv[2]) == "favorite") {
+        if (argc < 4) {
+            std::cerr << "Error: Missing itinerary ID for favorite command." << std::endl;
+            std::cerr << "Usage: travel_planner itinerary favorite <id>" << std::endl;
+            return 1;
+        }
+        favoriteItinerary(argv[3]);
+        return 0;
+	}
+
+    else if (argc >= 3 && std::string(argv[1]) == "itinerary" && std::string(argv[2]) == "unfavorite") {
+        if (argc < 4) {
+            std::cerr << "Error: Missing itinerary ID for unfavorite command." << std::endl;
+            std::cerr << "Usage: travel_planner itinerary unfavorite <id>" << std::endl;
+            return 1;
+        }
+        unfavoriteItinerary(argv[3]);
+        return 0;
+	}
+
+    else if (argc >= 2 && std::string(argv[1]) == "itinerary" && std::string(argv[2]) == "favorites") {
+        listFavoriteItineraries();
+        return 0;
+	}
+
+    else if (argc >= 3 && std::string(argv[1]) == "itinerary" && std::string(argv[2]) == "search") {
+        if (argc < 4) {
+            std::cerr << "Error: Missing keyword for itinerary search." << std::endl;
+            std::cerr << "Usage: travel_planner itinerary search <keyword>" << std::endl;
+            return 1;
+        }
+        searchItinerariesByKeyword(argv[3]);
+        return 0;
+	}
+
+    else if (argc >= 3 && std::string(argv[1]) == "itinerary" && std::string(argv[2]) == "fav") {
+        if (argc < 4) {
+            std::cerr << "Error: Missing itinerary ID for favorite command." << std::endl;
+            std::cerr << "Usage: travel_planner itinerary favorite <id>" << std::endl;
+            return 1;
+        }
+        favoriteItinerary(argv[3]);
+        return 0;
+        }
+
+    else if (argc >= 3 && std::string(argv[1]) == "itinerary" && std::string(argv[2]) == "unfav") {
+            if (argc < 4) {
+                std::cerr << "Error: Missing itinerary ID for unfavorite command." << std::endl;
+                std::cerr << "Usage: travel_planner itinerary unfavorite <id>" << std::endl;
+                return 1;
+            }
+            unfavoriteItinerary(argv[3]);
+            return 0;
+            }
+
     // If no valid command is provided
     std::cerr << "Error: Invalid command" << std::endl;
     displayHelp();
@@ -299,6 +358,12 @@ void displayHelp() {
     std::cout << "  export itinerary <id> [--format md|csv] Export an itinerary in Markdown (default) or CSV format" << std::endl;
     std::cout << "  export packing <id> [--format md|csv]  Export a packing list to a file (default: Markdown)" << std::endl;
     std::cout << "  export expense <id> [--format md|csv]   Export expenses to a file (default: Markdown)" << std::endl;
+    std::cout << "  itinerary favorite <id>         Mark an itinerary as favorite" << std::endl;
+    std::cout << "  itinerary fav <id>                        Shortcut to mark an itinerary as favorite" << std::endl;
+    std::cout << "  itinerary unfavorite <id>       Remove favorite status from an itinerary" << std::endl;
+    std::cout << "  itinerary unfav <id>                      Shortcut to remove favorite status from an itinerary" << std::endl;
+    std::cout << "  itinerary favorites             List all favorite itineraries" << std::endl;
+    std::cout << "  itinerary search <keyword>      Search itineraries by keyword" << std::endl;
 
 }
 
@@ -319,7 +384,7 @@ bool hasOption(int argc, char* argv[], const std::string& option) {
 bool isKnownOption(const std::string& option) {
     static const std::vector<std::string> knownOptions = {
         "--help", "-h", "--version", "add", "list", "view", "edit", "delete", "--name", "--qty",
-        "--category", "--date", "--desc", "--format", "--tag"
+        "--category", "--date", "--desc", "--format", "--tag", "fav", "unfav"
     };
 
     return std::find(knownOptions.begin(), knownOptions.end(), option) != knownOptions.end();
@@ -407,44 +472,51 @@ void addItinerary() {
 }
 
 void listItineraries() {
-    std::cout << "Loading itineraries...\n";
-
-    // Create storage manager with default path
-	travel_planner::StorageManager storageManager("data/itineraries.json");
-
-    // Load all itineraries
+    travel_planner::StorageManager storageManager("data/itineraries.json");
     std::vector<travel_planner::Itinerary> itineraries = storageManager.loadAll();
 
     if (itineraries.empty()) {
-        std::cout << "No itineraries found.\n";
+        std::cout << "No itineraries found." << std::endl;
         return;
     }
 
-    // Calculate column widths (minimum width plus some padding)
-    size_t idWidth = 10;  // Minimum width for ID column
-    size_t nameWidth = 20; // Minimum width for Name column
+    // Find the longest ID and name for formatting
+    size_t maxIdLength = 2; // "ID" header length
+    size_t maxNameLength = 4; // "Name" header length
 
-    // Adjust column widths based on actual data
     for (const auto& itinerary : itineraries) {
-        idWidth = std::max(idWidth, itinerary.id.length() + 2);
-        nameWidth = std::max(nameWidth, itinerary.name.length() + 2);
+        maxIdLength = std::max(maxIdLength, itinerary.id.length());
+        maxNameLength = std::max(maxNameLength, itinerary.name.length());
     }
 
-    // Print table header
-    std::cout << std::string(idWidth + nameWidth + 3, '-') << '\n';
-    std::cout << "| " << std::left << std::setw(idWidth) << "ID"
-        << "| " << std::setw(nameWidth) << "Name" << "|\n";
-    std::cout << std::string(idWidth + nameWidth + 3, '-') << '\n';
+    // Add some padding
+    maxIdLength += 2;
+    maxNameLength += 2;
 
-    // Print each itinerary
+    // Length for favorite column
+    const size_t favColumnWidth = 10;
+
+    // Print headers
+    std::cout << std::left
+        << std::setw(maxIdLength) << "ID"
+        << std::setw(maxNameLength) << "Name"
+        << std::setw(favColumnWidth) << "Favorite" << std::endl;
+
+    // Print separator line
+    std::cout << std::string(maxIdLength + maxNameLength + favColumnWidth, '-') << std::endl;
+
+    // Print itineraries
     for (const auto& itinerary : itineraries) {
-        std::cout << "| " << std::left << std::setw(idWidth) << itinerary.id
-            << "| " << std::setw(nameWidth) << itinerary.name << "|\n";
+        std::cout << std::left
+            << std::setw(maxIdLength) << itinerary.id
+            << std::setw(maxNameLength) << itinerary.name
+            << std::setw(favColumnWidth) << (itinerary.is_favorite ? "*" : "") << std::endl;
     }
 
-    // Print table footer
-    std::cout << std::string(idWidth + nameWidth + 3, '-') << '\n';
-    std::cout << itineraries.size() << " itinerary/ies found.\n";
+    // Print count
+    std::cout << std::endl << itineraries.size()
+        << " " << (itineraries.size() == 1 ? "itinerary" : "itineraries")
+        << " found." << std::endl;
 }
 
 void viewItinerary(const std::string& id) {
@@ -1221,4 +1293,176 @@ void exportExpense(const std::vector<std::string>& args) {
     else {
         std::cerr << "Error: Failed to export expenses. Please check if the itinerary exists." << std::endl;
     }
+}
+
+void favoriteItinerary(const std::string& id) {
+    if (id.empty()) {
+        std::cerr << "Error: Itinerary ID is required." << std::endl;
+        return;
+    }
+
+    travel_planner::StorageManager storageManager("data/itineraries.json");
+    std::vector<travel_planner::Itinerary> itineraries = storageManager.loadAll();
+
+    auto it = std::find_if(itineraries.begin(), itineraries.end(),
+        [&id](const travel_planner::Itinerary& itinerary) {
+            return itinerary.id == id;
+        });
+
+    if (it == itineraries.end()) {
+        std::cerr << "Error: No itinerary found with ID: " << id << std::endl;
+        return;
+    }
+
+    // Set the itinerary as favorite
+    it->is_favorite = true;
+
+    // Save the updated list
+    storageManager.saveAll(itineraries);
+    std::cout << "Itinerary '" << it->name << "' marked as favorite." << std::endl;
+}
+
+void unfavoriteItinerary(const std::string& id) {
+    if (id.empty()) {
+        std::cerr << "Error: Itinerary ID is required." << std::endl;
+        return;
+    }
+
+    travel_planner::StorageManager storageManager("data/itineraries.json");
+    std::vector<travel_planner::Itinerary> itineraries = storageManager.loadAll();
+
+    auto it = std::find_if(itineraries.begin(), itineraries.end(),
+        [&id](const travel_planner::Itinerary& itinerary) {
+            return itinerary.id == id;
+        });
+
+    if (it == itineraries.end()) {
+        std::cerr << "Error: No itinerary found with ID: " << id << std::endl;
+        return;
+    }
+
+    // Remove the favorite status
+    it->is_favorite = false;
+
+    // Save the updated list
+    storageManager.saveAll(itineraries);
+    std::cout << "Favorite status removed from itinerary '" << it->name << "'." << std::endl;
+}
+
+void listFavoriteItineraries() {
+    travel_planner::StorageManager storageManager("data/itineraries.json");
+    std::vector<travel_planner::Itinerary> allItineraries = storageManager.loadAll();
+
+    // Filter for favorite itineraries only
+    std::vector<travel_planner::Itinerary> favoriteItineraries;
+    std::copy_if(allItineraries.begin(), allItineraries.end(),
+        std::back_inserter(favoriteItineraries),
+        [](const travel_planner::Itinerary& itin) { return itin.is_favorite; });
+
+    if (favoriteItineraries.empty()) {
+        std::cout << "No favorite itineraries found." << std::endl;
+        return;
+    }
+
+    // Find the longest ID and name for formatting
+    size_t maxIdLength = 2; // "ID" header length
+    size_t maxNameLength = 4; // "Name" header length
+
+    for (const auto& itinerary : favoriteItineraries) {
+        maxIdLength = std::max(maxIdLength, itinerary.id.length());
+        maxNameLength = std::max(maxNameLength, itinerary.name.length());
+    }
+
+    // Add some padding
+    maxIdLength += 2;
+    maxNameLength += 2;
+
+    // Print headers
+    std::cout << std::left << std::setw(maxIdLength) << "ID"
+        << std::setw(maxNameLength) << "Name" << std::endl;
+
+    // Print separator line
+    std::cout << std::string(maxIdLength + maxNameLength, '-') << std::endl;
+
+    // Print itineraries
+    for (const auto& itinerary : favoriteItineraries) {
+        std::cout << std::left << std::setw(maxIdLength) << itinerary.id
+            << std::setw(maxNameLength) << itinerary.name << std::endl;
+    }
+
+    // Print count
+    std::cout << std::endl << favoriteItineraries.size()
+        << " favorite " << (favoriteItineraries.size() == 1 ? "itinerary" : "itineraries")
+        << " found." << std::endl;
+}
+
+std::string toLower(const std::string& str) {
+    std::string result = str;
+    std::transform(result.begin(), result.end(), result.begin(),
+        [](unsigned char c) { return std::tolower(c); });
+    return result;
+}
+
+// Helper function for case-insensitive substring check
+bool caseInsensitiveContains(const std::string& str, const std::string& substr) {
+    std::string lowerStr = toLower(str);
+    std::string lowerSubstr = toLower(substr);
+    return lowerStr.find(lowerSubstr) != std::string::npos;
+}
+
+// Function to search itineraries by keyword
+void searchItinerariesByKeyword(const std::string& keyword) {
+    if (keyword.empty()) {
+        std::cerr << "Error: Search keyword is required." << std::endl;
+        return;
+    }
+
+    travel_planner::StorageManager storageManager("data/itineraries.json");
+    std::vector<travel_planner::Itinerary> allItineraries = storageManager.loadAll();
+
+    // Filter for matching itineraries
+    std::vector<travel_planner::Itinerary> matchingItineraries;
+
+    for (const auto& itinerary : allItineraries) {
+        if (caseInsensitiveContains(itinerary.name, keyword) ||
+            caseInsensitiveContains(itinerary.description, keyword)) {
+            matchingItineraries.push_back(itinerary);
+        }
+    }
+
+    if (matchingItineraries.empty()) {
+        std::cout << "No itineraries found matching '" << keyword << "'." << std::endl;
+        return;
+    }
+
+    // Find the longest ID and name for formatting
+    size_t maxIdLength = 2; // "ID" header length
+    size_t maxNameLength = 4; // "Name" header length
+
+    for (const auto& itinerary : matchingItineraries) {
+        maxIdLength = std::max(maxIdLength, itinerary.id.length());
+        maxNameLength = std::max(maxNameLength, itinerary.name.length());
+    }
+
+    // Add some padding
+    maxIdLength += 2;
+    maxNameLength += 2;
+
+    // Print headers
+    std::cout << std::left << std::setw(maxIdLength) << "ID"
+        << std::setw(maxNameLength) << "Name" << std::endl;
+
+    // Print separator line
+    std::cout << std::string(maxIdLength + maxNameLength, '-') << std::endl;
+
+    // Print matching itineraries
+    for (const auto& itinerary : matchingItineraries) {
+        std::cout << std::left << std::setw(maxIdLength) << itinerary.id
+            << std::setw(maxNameLength) << itinerary.name << std::endl;
+    }
+
+    // Print count
+    std::cout << std::endl << matchingItineraries.size()
+        << " " << (matchingItineraries.size() == 1 ? "itinerary" : "itineraries")
+        << " found matching '" << keyword << "'." << std::endl;
 }

@@ -1,4 +1,4 @@
-# Travel Itinerary Planner
+﻿# Travel Itinerary Planner
 
 A command-line application for creating and managing travel itineraries.
 
@@ -360,6 +360,111 @@ All exported files are saved in the `exports/` directory with filenames based on
 - Itineraries: `exports/itinerary_<id>.[md|csv]`
 - Packing Lists: `exports/packing_<id>.[md|csv]`
 - Expenses: `exports/expenses_<id>.[md|csv]`
+
+
+## Managing Favorites
+
+You can mark itineraries as favorites for easy access and reference.
+
+### Marking Favorites
+
+To mark an itinerary as a favorite:
+```
+./travel_planner itinerary favorite <id>
+```
+
+or use the shortcut:
+```
+./travel_planner fav <id>
+```
+
+Example:
+```
+./travel_planner fav abc123
+```
+
+Output:
+```
+Itinerary 'Summer in Paris' marked as favorite.
+```
+
+### Removing Favorite Status
+
+To remove the favorite status:
+```
+./travel_planner itinerary unfavorite <id>
+```
+
+or use the shortcut:
+```
+./travel_planner unfav <id>
+```
+
+Example:
+```
+./travel_planner unfav abc123
+```
+
+Output:
+```
+Favorite status removed from itinerary 'Summer in Paris'.
+```
+
+### Viewing Favorite Itineraries
+
+To view only your favorite itineraries:
+```
+./travel_planner itinerary favorites
+```
+
+Example output:
+```
+ID      Name                  Favorite
+abc123  Summer in Paris       ★
+def456  Tokyo Adventure       ★
+
+2 itineraries found.
+```
+
+### Visual Indication
+
+When listing all itineraries, favorite items are marked with a star (★) symbol:
+```
+./travel_planner list
+```
+
+Example output:
+```
+ID      Name                  Favorite
+abc123  Summer in Paris       ★
+def456  Tokyo Adventure       ★
+ghi789  London Weekend
+
+3 itineraries found.
+```
+
+## Searching Itineraries
+
+You can search through your itineraries using keywords that match against the name or description:
+```
+./travel_planner itinerary search <keyword>
+```
+
+Example:
+```
+./travel_planner itinerary search beach
+```
+
+Output:
+```
+ID      Name                  Favorite
+jkl012  Beach Getaway         ★
+mno345  Miami Spring Break
+
+2 itineraries found matching 'beach'.
+```
+
+The search is case-insensitive and will match partial words in both the name and description fields.
 
 
 ## License

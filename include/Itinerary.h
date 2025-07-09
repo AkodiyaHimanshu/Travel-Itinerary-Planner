@@ -13,6 +13,7 @@ namespace travel_planner {
         std::string end_date;
         std::string description;
         std::vector<std::string> tags;  // New field for tags
+        bool is_favorite = false;
 
         Itinerary() = default;
 
@@ -21,7 +22,7 @@ namespace travel_planner {
             const std::string& description,
             const std::vector<std::string>& tags = {})  // Updated constructor
             : id(id), name(name), start_date(start_date),
-            end_date(end_date), description(description), tags(tags) {
+            end_date(end_date), description(description), tags(tags), is_favorite(is_favorite) {
         }
     };
 
@@ -33,7 +34,8 @@ namespace travel_planner {
             {"start_date", itinerary.start_date},
             {"end_date", itinerary.end_date},
             {"description", itinerary.description},
-            {"tags", itinerary.tags}  // Added tags serialization
+            {"tags", itinerary.tags},  // Added tags serialization
+            { "is_favorite", itinerary.is_favorite }
         };
     }
 
@@ -45,6 +47,14 @@ namespace travel_planner {
         j.at("end_date").get_to(itinerary.end_date);
         j.at("description").get_to(itinerary.description);
         j.at("tags").get_to(itinerary.tags);  // Added tags deserialization
+
+        // Handle backward compatibility
+        if (j.contains("is_favorite")) {
+            j.at("is_favorite").get_to(itinerary.is_favorite);
+        }
+        else {
+            itinerary.is_favorite = false; // Default value if not present
+        }
     }
 }
 

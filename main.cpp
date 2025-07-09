@@ -1319,4 +1319,73 @@ void listFavoriteItineraries() {
         << " favorite " << (favoriteItineraries.size() == 1 ? "itinerary" : "itineraries")
         << " found." << std::endl;
 }
+std::string toLower(const std::string& str) {
+    std::string result = str;
+    std::transform(result.begin(), result.end(), result.begin(),
+        [](unsigned char c) { return std::tolower(c); });
+    return result;
+}
+
+// Helper function for case-insensitive substring check
+bool caseInsensitiveContains(const std::string& str, const std::string& substr) {
+    std::string lowerStr = toLower(str);
+    std::string lowerSubstr = toLower(substr);
+    return lowerStr.find(lowerSubstr) != std::string::npos;
+}
+
+// Function to search itineraries by keyword
+void searchItinerariesByKeyword(const std::string& keyword) {
+    if (keyword.empty()) {
+        std::cerr << "Error: Search keyword is required." << std::endl;
+        return;
+    }
+
+    travel_planner::StorageManager storageManager("data/itineraries.json");
+    std::vector<travel_planner::Itinerary> allItineraries = storageManager.loadAll();
+
+    // Filter for matching itineraries
+    std::vector<travel_planner::Itinerary> matchingItineraries;
+
+    for (const auto& itinerary : allItineraries) {
+        if (caseInsensitiveContains(itinerary.name, keyword) ||
+            caseInsensitiveContains(itinerary.description, keyword)) {
+            matchingItineraries.push_back(itinerary);
+        }
+    }
+
+    if (matchingItineraries.empty()) {
+        std::cout << "No itineraries found matching '" << keyword << "'." << std::endl;
+        return;
+    }
+
+    // Find the longest ID and name for formatting
+    size_t maxIdLength = 2; // "ID" header length
+    size_t maxNameLength = 4; // "Name" header length
+
+    for (const auto& itinerary : matchingItineraries) {
+        maxIdLength = std::max(maxIdLength, itinerary.id.length());
+        maxNameLength = std::max(maxNameLength, itinerary.name.length());
+    }
+
+    // Add some padding
+    maxIdLength += 2;
+    maxNameLength += 2;
+
+    // Print headers
+    std::cout << std::left << std::setw(maxIdLength) << "ID"
+        << std::setw(maxNameLength) << "Name" << std::endl;
+
+    // Print separator line
+    std::cout << std::string(maxIdLength + maxNameLength, '-') << std::endl;
+
+    // Print matching itineraries
+    for (const auto& itinerary : matchingItineraries) {
+        std::cout << std::left << std::setw(maxIdLength) << itinerary.id
+            << std::setw(maxNameLength) << itinerary.name << std::endl;
+    }
+
+    // Print count
+    std::cout << std::endl << matchingItineraries.size()
+        << " " << (matchingItineraries.size() == 1 ? "itinerary" : "itineraries")
+        << " found matching '" << keyword << "'." << std::endl;
 }

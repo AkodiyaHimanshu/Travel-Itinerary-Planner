@@ -1221,4 +1221,30 @@ void exportExpense(const std::vector<std::string>& args) {
     else {
         std::cerr << "Error: Failed to export expenses. Please check if the itinerary exists." << std::endl;
     }
+void favoriteItinerary(const std::string& id) {
+    if (id.empty()) {
+        std::cerr << "Error: Itinerary ID is required." << std::endl;
+        return;
+    }
+
+    travel_planner::StorageManager storageManager("data/itineraries.json");
+    std::vector<travel_planner::Itinerary> itineraries = storageManager.loadAll();
+
+    auto it = std::find_if(itineraries.begin(), itineraries.end(),
+        [&id](const travel_planner::Itinerary& itinerary) {
+            return itinerary.id == id;
+        });
+
+    if (it == itineraries.end()) {
+        std::cerr << "Error: No itinerary found with ID: " << id << std::endl;
+        return;
+    }
+
+    // Set the itinerary as favorite
+    it->is_favorite = true;
+
+    // Save the updated list
+    storageManager.saveAll(itineraries);
+    std::cout << "Itinerary '" << it->name << "' marked as favorite." << std::endl;
+}
 }

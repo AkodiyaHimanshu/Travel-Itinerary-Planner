@@ -1247,4 +1247,30 @@ void favoriteItinerary(const std::string& id) {
     storageManager.saveAll(itineraries);
     std::cout << "Itinerary '" << it->name << "' marked as favorite." << std::endl;
 }
+void unfavoriteItinerary(const std::string& id) {
+    if (id.empty()) {
+        std::cerr << "Error: Itinerary ID is required." << std::endl;
+        return;
+    }
+
+    travel_planner::StorageManager storageManager("data/itineraries.json");
+    std::vector<travel_planner::Itinerary> itineraries = storageManager.loadAll();
+
+    auto it = std::find_if(itineraries.begin(), itineraries.end(),
+        [&id](const travel_planner::Itinerary& itinerary) {
+            return itinerary.id == id;
+        });
+
+    if (it == itineraries.end()) {
+        std::cerr << "Error: No itinerary found with ID: " << id << std::endl;
+        return;
+    }
+
+    // Remove the favorite status
+    it->is_favorite = false;
+
+    // Save the updated list
+    storageManager.saveAll(itineraries);
+    std::cout << "Favorite status removed from itinerary '" << it->name << "'." << std::endl;
+}
 }

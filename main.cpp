@@ -407,9 +407,6 @@ void addItinerary() {
 }
 
 void listItineraries() {
-    std::cout << "Loading itineraries...\n";
-
-    // Create storage manager with default path
 	travel_planner::StorageManager storageManager("data/itineraries.json");
 
     // Load all itineraries
@@ -430,21 +427,34 @@ void listItineraries() {
         nameWidth = std::max(nameWidth, itinerary.name.length() + 2);
     }
 
-    // Print table header
-    std::cout << std::string(idWidth + nameWidth + 3, '-') << '\n';
-    std::cout << "| " << std::left << std::setw(idWidth) << "ID"
-        << "| " << std::setw(nameWidth) << "Name" << "|\n";
-    std::cout << std::string(idWidth + nameWidth + 3, '-') << '\n';
+    // Add some padding
+    maxIdLength += 2;
+    maxNameLength += 2;
+
+    // Length for favorite column
+    const size_t favColumnWidth = 10;
+
+    // Print headers
+    std::cout << std::left
+        << std::setw(maxIdLength) << "ID"
+        << std::setw(maxNameLength) << "Name"
+        << std::setw(favColumnWidth) << "Favorite" << std::endl;
+
+    // Print separator line
+    std::cout << std::string(maxIdLength + maxNameLength + favColumnWidth, '-') << std::endl;
 
     // Print each itinerary
     for (const auto& itinerary : itineraries) {
-        std::cout << "| " << std::left << std::setw(idWidth) << itinerary.id
-            << "| " << std::setw(nameWidth) << itinerary.name << "|\n";
+        std::cout << std::left
+            << std::setw(maxIdLength) << itinerary.id
+            << std::setw(maxNameLength) << itinerary.name
+            << std::setw(favColumnWidth) << (itinerary.is_favorite ? "*" : "") << std::endl;
     }
 
-    // Print table footer
-    std::cout << std::string(idWidth + nameWidth + 3, '-') << '\n';
-    std::cout << itineraries.size() << " itinerary/ies found.\n";
+    // Print count
+    std::cout << std::endl << itineraries.size()
+        << " " << (itineraries.size() == 1 ? "itinerary" : "itineraries")
+        << " found." << std::endl;
 }
 
 void viewItinerary(const std::string& id) {
